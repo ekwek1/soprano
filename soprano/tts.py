@@ -5,15 +5,18 @@ from unidecode import unidecode
 from scipy.io import wavfile
 from huggingface_hub import hf_hub_download
 import os
+import time
 
 
 class SopranoTTS:
     def __init__(self,
             backend='auto',
             device='cuda',
-            cache_size_mb=10,
+            cache_size_mb=100,
             decoder_batch_size=1):
-        assert device in ['cuda', 'cpu'], f"unrecognized device {device}"
+        RECOGNIZED_DEVICES = ['cuda']
+        RECOGNIZED_BACKENDS = ['auto', 'lmdeploy', 'transformers']
+        assert device in RECOGNIZED_DEVICES, f"unrecognized device {device}, device must be in {RECOGNIZED_DEVICES}"
         if backend == 'auto':
             if device == 'cpu':
                 backend = 'transformers'
@@ -24,7 +27,7 @@ class SopranoTTS:
                 except ImportError:
                     backend='transformers'
             print(f"Using backend {backend}.")
-        assert backend in ['lmdeploy', 'transformers'], f"unrecognized backend {backend}"
+        assert backend in RECOGNIZED_BACKENDS, f"unrecognized backend {backend}, backend must be in {RECOGNIZED_BACKENDS}"
 
         if backend == 'lmdeploy':
             from .backends.lmdeploy import LMDeployModel
@@ -32,11 +35,13 @@ class SopranoTTS:
         elif backend == 'transformers':
             from .backends.transformers import TransformersModel
             self.pipeline = TransformersModel(device=device)
+
         self.decoder = SopranoDecoder().cuda()
         decoder_path = hf_hub_download(repo_id='ekwek/Soprano-80M', filename='decoder.pth')
-        self.decoder.load_state_dict(torch.load(decoder_path)) # get ckpt path
+        self.decoder.load_state_dict(torch.load(decoder_path))
         self.decoder_batch_size=decoder_batch_size
-        self.STREAM_CHUNK = 4 # Decoder receptive field, do not change
+        self.RECEPTIVE_FIELD = 4 # Decoder receptive field
+        self.TOKEN_SIZE = 2048 # Number of samples per audio token
 
         self.infer("Hello world!") # warmup
 
@@ -74,7 +79,7 @@ class SopranoTTS:
             repetition_penalty=repetition_penalty,
             out_dir=None)[0]
         if out_path:
-            wavfile.write(f"{out_path}", 32000, results.cpu().numpy())
+            wavfile.write(out_path, 32000, results.numpy())
         return results
 
     def infer_batch(self,
@@ -83,9 +88,6 @@ class SopranoTTS:
             top_p=0.95,
             temperature=0.3,
             repetition_penalty=1.2):
-        """
-        split by sentence, infer, then batch decode
-        """
         sentence_data = self._preprocess_text(texts)
         prompts = list(map(lambda x: x[0], sentence_data))
         responses = self.pipeline.infer(prompts,
@@ -122,13 +124,13 @@ class SopranoTTS:
             for i in range(N):
                 text_id = sentence_data[idx+i][1]
                 sentence_id = sentence_data[idx+i][2]
-                audio_concat[text_id][sentence_id] = audio[i].squeeze()[-(lengths[i]*2048-2048):]
-        audio_concat = [torch.cat(x) for x in audio_concat]
+                audio_concat[text_id][sentence_id] = audio[i].squeeze()[-(lengths[i]*self.TOKEN_SIZE-self.TOKEN_SIZE):]
+        audio_concat = [torch.cat(x).cpu() for x in audio_concat]
         
         if out_dir:
             os.makedirs(out_dir, exist_ok=True)
             for i in range(len(audio_concat)):
-                wavfile.write(f"{out_dir}/{i}.wav", 32000, audio_concat[i].cpu().numpy())
+                wavfile.write(f"{out_dir}/{i}.wav", 32000, audio_concat[i].numpy())
         return audio_concat
 
     def infer_stream(self,
@@ -137,8 +139,10 @@ class SopranoTTS:
             top_p=0.95,
             temperature=0.3,
             repetition_penalty=1.2):
+        start_time = time.time()
         sentence_data = self._preprocess_text([text])
 
+        first_chunk = True
         for sentence, _, _ in sentence_data:
             responses = self.pipeline.stream_infer(sentence,
                 top_p=top_p,
@@ -149,17 +153,20 @@ class SopranoTTS:
             for token in responses:
                 finished = token['finish_reason'] is not None
                 if not finished: hidden_states_buffer.append(token['hidden_state'][-1])
-                hidden_states_buffer = hidden_states_buffer[-(2*self.STREAM_CHUNK+chunk_size):]
-                if finished or len(hidden_states_buffer) >= self.STREAM_CHUNK + chunk_size:
+                hidden_states_buffer = hidden_states_buffer[-(2*self.RECEPTIVE_FIELD+chunk_size):]
+                if finished or len(hidden_states_buffer) >= self.RECEPTIVE_FIELD + chunk_size:
                     if finished or chunk_counter == chunk_size:
                         batch_hidden_states = torch.stack(hidden_states_buffer)
                         inp = batch_hidden_states.unsqueeze(0).transpose(1, 2).cuda().to(torch.float32)
                         with torch.no_grad():
                             audio = self.decoder(inp)[0]
                         if finished:
-                            audio_chunk = audio[-((self.STREAM_CHUNK+chunk_counter-1)*2048-2048):]
+                            audio_chunk = audio[-((self.RECEPTIVE_FIELD+chunk_counter-1)*self.TOKEN_SIZE-self.TOKEN_SIZE):]
                         else:
-                            audio_chunk = audio[-((self.STREAM_CHUNK+chunk_size)*2048-2048):-(self.STREAM_CHUNK*2048-2048)]
+                            audio_chunk = audio[-((self.RECEPTIVE_FIELD+chunk_size)*self.TOKEN_SIZE-self.TOKEN_SIZE):-(self.RECEPTIVE_FIELD*self.TOKEN_SIZE-self.TOKEN_SIZE)]
                         chunk_counter = 0
+                        if first_chunk:
+                            print(f"Streaming latency: {1000*(time.time()-start_time):.2f} ms")
+                            first_chunk = False
                         yield audio_chunk.cpu()
                     chunk_counter += 1
