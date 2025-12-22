@@ -30,7 +30,7 @@ With only **80M parameters**, Soprano achieves a real‑time factor (RTF) of **~
 
 ```bash
 pip install soprano-tts
-pip install torch==2.8.0 --index-url https://download.pytorch.org/whl/cu126
+pip install --force-reinstall torch==2.8.0 --index-url https://download.pytorch.org/whl/cu126
 ```
 
 ### Install from source
@@ -39,7 +39,7 @@ pip install torch==2.8.0 --index-url https://download.pytorch.org/whl/cu126
 git clone https://github.com/ekwek1/soprano.git
 cd soprano
 pip install -e .
-pip install torch==2.8.0 --index-url https://download.pytorch.org/whl/cu126
+pip install --force-reinstall torch==2.8.0 --index-url https://download.pytorch.org/whl/cu126
 ```
 
 > **Note**: Soprano uses **LMDeploy** to accelerate inference by default. If LMDeploy cannot be installed in your environment, Soprano can fall back to the HuggingFace **transformers** backend (with slower performance). To enable this, pass `backend='transformers'` when creating the TTS model.
