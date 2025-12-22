@@ -1,6 +1,7 @@
+<!-- Version 0.0.2 -->
 <div align="center">
   
-  # Soprano: Instant, Ultra‑Realistic Text‑to‑Speech
+  # Soprano: Instant, Ultra‑Realistic Text‑to‑Speech 
 
   [![Alt Text](https://img.shields.io/badge/HuggingFace-Model-orange?logo=huggingface)](https://huggingface.co/ekwek/Soprano-80M)
   [![Alt Text](https://img.shields.io/badge/HuggingFace-Demo-yellow?logo=huggingface)](https://huggingface.co/spaces/ekwek/Soprano-TTS)
