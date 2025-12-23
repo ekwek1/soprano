@@ -9,9 +9,12 @@ class TransformersModel(BaseModel):
             **kwargs):
         self.device = device
         
+        # Set appropriate dtype based on device
+        dtype = torch.bfloat16 if device == 'cuda' else torch.float32
+        
         self.model = AutoModelForCausalLM.from_pretrained(
             'ekwek/Soprano-80M',
-            torch_dtype=torch.bfloat16 if device == 'cuda' else torch.float32,
+            torch_dtype=dtype,
             device_map=device
         )
         self.tokenizer = AutoTokenizer.from_pretrained('ekwek/Soprano-80M')
@@ -43,6 +46,7 @@ class TransformersModel(BaseModel):
                 return_dict_in_generate=True,
                 output_hidden_states=True,
             )
+        
         res = []
         eos_token_id = self.model.config.eos_token_id
         for i in range(len(prompts)):
@@ -51,7 +55,9 @@ class TransformersModel(BaseModel):
             num_output_tokens = len(outputs.hidden_states)
             for j in range(num_output_tokens):
                 token = seq[j + seq.size(0) - num_output_tokens]
-                if token != eos_token_id: hidden_states.append(outputs.hidden_states[j][-1][i, -1, :])
+                if token != eos_token_id:
+                    hidden_states.append(outputs.hidden_states[j][-1][i, -1, :])
+            
             last_hidden_state = torch.stack(hidden_states).squeeze()
             finish_reason = 'stop' if seq[-1].item() == eos_token_id else 'length'
             res.append({
