@@ -3,3 +3,4 @@ test.py
 *.wav
 dist/
 *.egg-info/
+.venv/
