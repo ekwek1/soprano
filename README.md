@@ -105,6 +105,25 @@ for chunk in stream:
 out = torch.cat(chunks)
 ```
 
+### Serve endpoint
+
+```
+uvicorn server:app --host 0.0.0.0 --port 8000
+```
+
+Compatible with OpenAI speech API. Use the endpoint like this:
+
+```bash
+curl http://localhost:8000/v1/audio/speech \
+  -H "Content-Type: application/json" \
+  -d '{
+    "input": "The quick brown fox jumped over the lazy dog."
+  }' \
+  --output speech.wav
+```
+
+You can pass `"stream": True` for SSE responses.
+
 ## Usage tips:
 
 * Soprano works best when each sentence is between 2 and 15 seconds long.
@@ -149,8 +168,8 @@ I’m a second-year undergrad who’s just started working on TTS models, so I w
 * [x] Add model and inference code
 * [x] Seamless streaming
 * [x] Batched inference
+* [x] Server / API inference
 * [ ] Command-line interface (CLI)
-* [ ] Server / API inference
 * [ ] Additional LLM backends
 * [ ] CPU support
 * [ ] Voice cloning
