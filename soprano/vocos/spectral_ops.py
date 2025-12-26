@@ -24,7 +24,7 @@ class ISTFT(nn.Module):
         self.n_fft = n_fft
         self.hop_length = hop_length
         self.win_length = win_length
-        window = torch.hann_window(win_length).to('cuda')
+        window = torch.hann_window(win_length)
         self.register_buffer("window", window)
 
     def forward(self, spec: torch.Tensor) -> torch.Tensor:

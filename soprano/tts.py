@@ -9,26 +9,60 @@ import time
 
 
 class SopranoTTS:
+    """
+    Soprano Text-to-Speech model.
+    
+    Args:
+        backend: Backend to use for inference. Options:
+            - 'auto' (default): Automatically select best backend. Tries lmdeploy first (fastest),
+                               falls back to transformers. CPU always uses transformers.
+            - 'lmdeploy': Force use of LMDeploy (fastest, CUDA only)
+            - 'transformers': Force use of HuggingFace Transformers (slower, all devices)
+            Can be overridden with SOPRANO_BACKEND environment variable.
+        device: Device to run inference on ('cuda', 'cpu', 'mps')
+        cache_size_mb: Cache size in MB for lmdeploy backend
+        decoder_batch_size: Batch size for decoder
+    
+    Environment Variables:
+        SOPRANO_BACKEND: Override backend selection ('lmdeploy' or 'transformers')
+    """
     def __init__(self,
             backend='auto',
             device='cuda',
             cache_size_mb=10,
             decoder_batch_size=1):
-        RECOGNIZED_DEVICES = ['cuda']
+        RECOGNIZED_DEVICES = ['cuda', 'cpu', 'mps']
         RECOGNIZED_BACKENDS = ['auto', 'lmdeploy', 'transformers']
+        
+        # Check for environment variable override
+        env_backend = os.environ.get('SOPRANO_BACKEND')
+        if env_backend:
+            if env_backend in RECOGNIZED_BACKENDS:
+                backend = env_backend
+                print(f"Using backend from SOPRANO_BACKEND: {backend}")
+            else:
+                print(f"Warning: Invalid SOPRANO_BACKEND='{env_backend}'. Must be one of {RECOGNIZED_BACKENDS}. Ignoring.")
+        
         assert device in RECOGNIZED_DEVICES, f"unrecognized device {device}, device must be in {RECOGNIZED_DEVICES}"
+        
+        # Auto-select backend based on device and availability
         if backend == 'auto':
             if device == 'cpu':
                 backend = 'transformers'
+                print(f"Using backend: {backend} (CPU always uses transformers)")
             else:
                 try:
                     import lmdeploy
                     backend = 'lmdeploy'
+                    print(f"Using backend: {backend} (lmdeploy available)")
                 except ImportError:
-                    backend='transformers'
-            print(f"Using backend {backend}.")
+                    backend = 'transformers'
+                    print(f"Using backend: {backend} (lmdeploy not installed, falling back to transformers)")
+        else:
+            print(f"Using backend: {backend} (explicitly set)")
         assert backend in RECOGNIZED_BACKENDS, f"unrecognized backend {backend}, backend must be in {RECOGNIZED_BACKENDS}"
 
+        self.device = device
         if backend == 'lmdeploy':
             from .backends.lmdeploy import LMDeployModel
             self.pipeline = LMDeployModel(device=device, cache_size_mb=cache_size_mb)
@@ -36,9 +70,9 @@ class SopranoTTS:
             from .backends.transformers import TransformersModel
             self.pipeline = TransformersModel(device=device)
 
-        self.decoder = SopranoDecoder().cuda()
+        self.decoder = SopranoDecoder().to(device)
         decoder_path = hf_hub_download(repo_id='ekwek/Soprano-80M', filename='decoder.pth')
-        self.decoder.load_state_dict(torch.load(decoder_path))
+        self.decoder.load_state_dict(torch.load(decoder_path, map_location=device))
         self.decoder_batch_size=decoder_batch_size
         self.RECEPTIVE_FIELD = 4 # Decoder receptive field
         self.TOKEN_SIZE = 2048 # Number of samples per audio token
@@ -137,8 +171,8 @@ class SopranoTTS:
             N = len(lengths)
             for i in range(N):
                 batch_hidden_states.append(torch.cat([
-                    torch.zeros((1, 512, lengths[0]-lengths[i]), device='cuda'),
-                    hidden_states[idx+i].unsqueeze(0).transpose(1,2).cuda().to(torch.float32),
+                    torch.zeros((1, 512, lengths[0]-lengths[i]), device=self.device),
+                    hidden_states[idx+i].unsqueeze(0).transpose(1,2).to(self.device).to(torch.float32),
                 ], dim=2))
             batch_hidden_states = torch.cat(batch_hidden_states)
             with torch.no_grad():
@@ -180,7 +214,7 @@ class SopranoTTS:
                 if finished or len(hidden_states_buffer) >= self.RECEPTIVE_FIELD + chunk_size:
                     if finished or chunk_counter == chunk_size:
                         batch_hidden_states = torch.stack(hidden_states_buffer)
-                        inp = batch_hidden_states.unsqueeze(0).transpose(1, 2).cuda().to(torch.float32)
+                        inp = batch_hidden_states.unsqueeze(0).transpose(1, 2).to(self.device).to(torch.float32)
                         with torch.no_grad():
                             audio = self.decoder(inp)[0]
                         if finished:
