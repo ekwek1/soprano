@@ -1,4 +1,5 @@
 from .vocos.decoder import SopranoDecoder
+from .utils.text import clean_text
 import torch
 import re
 from unidecode import unidecode
@@ -53,20 +54,12 @@ class SopranoTTS:
         res = []
         for text_idx, text in enumerate(texts):
             text = text.strip()
-            sentences = re.split(r"(?<=[.!?])\s+", text)
+            cleaned_text = clean_text(text)
+            sentences = re.split(r"(?<=[.!?])\s+", cleaned_text)
             processed = []
-            for sentence_idx, sentence in enumerate(sentences):
-                old_len = len(sentence)
-                new_sentence = re.sub(r"[^A-Za-z !\$%&'*+,-./0123456789<>?_]", "", sentence)
-                new_sentence = re.sub(r"[<>/_+]", "", new_sentence)
-                new_sentence = re.sub(r"\.\.[^\.]", ".", new_sentence)
-                new_sentence = re.sub(r"\s+", " ", new_sentence)
-                new_len = len(new_sentence)
-                if old_len != new_len:
-                    print(f"Warning: unsupported characters found in sentence: {sentence}\n\tThese characters have been removed.")
-                new_sentence = unidecode(new_sentence.strip())
+            for sentence in sentences:
                 processed.append({
-                    "text": new_sentence,
+                    "text": sentence,
                     "text_idx": text_idx,
                 })
 
