@@ -7,11 +7,16 @@ class LMDeployModel(BaseModel):
     def __init__(self,
             device='cuda',
             cache_size_mb=100,
+            model_path=None,
             **kwargs):
         assert device == 'cuda', "lmdeploy only supports cuda devices, consider changing device or using a different backend instead."
         cache_size_ratio = cache_size_mb * 1024**2 / torch.cuda.get_device_properties('cuda').total_memory
         backend_config = TurbomindEngineConfig(cache_max_entry_count=cache_size_ratio)
-        self.pipeline = pipeline('ekwek/Soprano-80M',
+        
+        # Use local model if path provided, otherwise use HuggingFace
+        model_name_or_path = model_path if model_path else 'ekwek/Soprano-80M'
+        
+        self.pipeline = pipeline(model_name_or_path,
             log_level='ERROR',
             backend_config=backend_config)
 

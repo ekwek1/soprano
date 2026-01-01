@@ -6,15 +6,19 @@ from .base import BaseModel
 class TransformersModel(BaseModel):
     def __init__(self,
             device='cuda',
+            model_path=None,
             **kwargs):
         self.device = device
         
+        # Use local model if path provided, otherwise use HuggingFace
+        model_name_or_path = model_path if model_path else 'ekwek/Soprano-80M'
+        
         self.model = AutoModelForCausalLM.from_pretrained(
-            'ekwek/Soprano-80M',
-            torch_dtype=torch.bfloat16 if device == 'cuda' else torch.float32,
+            model_name_or_path,
+            dtype=torch.bfloat16 if device == 'cuda' else torch.float32,
             device_map=device
         )
-        self.tokenizer = AutoTokenizer.from_pretrained('ekwek/Soprano-80M')
+        self.tokenizer = AutoTokenizer.from_pretrained(model_name_or_path)
         self.model.eval()
 
     def infer(self,
