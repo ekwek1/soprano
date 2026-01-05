@@ -19,7 +19,8 @@ dependencies = [
   "unidecode",
   "inflect",
   "scipy",
-  "transformers"
+  "transformers",
+  "accelerate"
 ]
 license = {file = "LICENSE"}
 
