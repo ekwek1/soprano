@@ -46,6 +46,32 @@ uv pip install -e .[rocm]
 
 ---
 
+## Web Interface (Gradio)
+
+For a simple web interface, you can use the included Gradio app:
+
+```bash
+# Install Gradio 6.2.0
+pip install gradio==6.2.0
+# or if you use uv:
+uv pip install gradio==6.2.0
+
+# Run the web interface (accessible at 0.0.0.0:7860)
+python gradio_app.py
+# or if you use uv:
+uv run gradio_app.py
+```
+
+Then open your browser at `http://localhost:7860` (or `http://<your-server-ip>:7860` if running on a remote server)
+
+The Gradio interface provides:
+- Text input with advanced sampling controls (temperature, top_p, repetition penalty)
+- Real-time audio generation and playback
+- Example prompts to get started
+- Simple, user-friendly interface
+
+---
+
 ## Usage
 
 ```python
