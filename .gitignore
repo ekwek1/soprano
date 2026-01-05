@@ -4,3 +4,4 @@ test.py
 dist/
 *.egg-info/
 run.sh
+.venv
