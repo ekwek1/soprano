@@ -16,14 +16,56 @@ classifiers = [
     "Operating System :: OS Independent",
 ]
 dependencies = [
-  "lmdeploy",
-  "torch",
   "unidecode",
   "inflect",
-  "scipy"
+  "scipy",
+  "transformers"
 ]
 license = {file = "LICENSE"}
+
+[project.optional-dependencies]
+cuda = [
+  "torch==2.8.0",
+  "torchaudio==2.8.0",
+  "lmdeploy"
+]
+rocm = [
+  "torch==2.8.0",
+  "torchaudio==2.8.0",
+  "pytorch-triton-rocm"
+]
 
 [project.urls]
 Homepage = "https://github.com/ekwek1/soprano"
 Issues = "https://github.com/ekwek1/soprano/issues"
+
+[tool.uv.sources]
+torch = [
+  { index = "pytorch-cuda", extra = "cuda" },
+  { index = "pytorch-rocm", extra = "rocm" }
+]
+torchaudio = [
+  { index = "pytorch-cuda", extra = "cuda" },
+  { index = "pytorch-rocm", extra = "rocm" }
+]
+pytorch-triton-rocm = [
+  { index = "pytorch-rocm", extra = "rocm" }
+]
+
+[[tool.uv.index]]
+name = "pytorch-cuda"
+url = "https://download.pytorch.org/whl/cu126"
+explicit = true
+
+[[tool.uv.index]]
+name = "pytorch-rocm"
+url = "https://download.pytorch.org/whl/rocm6.4"
+explicit = true
+
+[tool.uv]
+conflicts = [
+  [
+    { extra = "cuda" },
+    { extra = "rocm" },
+  ],
+]
