@@ -43,6 +43,10 @@ uv pip install -e .[rocm]
 > - **CUDA variant** includes **LMDeploy** for accelerated inference (faster performance)
 > - **ROCm variant** uses the HuggingFace **transformers** backend only (LMDeploy has NVIDIA-specific dependencies)
 > - When using ROCm, the model will automatically use `backend='transformers'` or you can specify it explicitly
+> - **ROCm users**: You may need to set the `HSA_OVERRIDE_GFX_VERSION` environment variable to match your GPU architecture, for example:
+>   ```bash
+>   export HSA_OVERRIDE_GFX_VERSION=11.0.0
+>   ```
 
 ---
 
@@ -56,10 +60,10 @@ pip install gradio==6.2.0
 # or if you use uv:
 uv pip install gradio==6.2.0
 
+# ROCm users: set HSA_OVERRIDE_GFX_VERSION before running
+# export HSA_OVERRIDE_GFX_VERSION=11.0.0
 # Run the web interface (accessible at 0.0.0.0:7860)
 python gradio_app.py
-# or if you use uv:
-uv run gradio_app.py
 ```
 
 Then open your browser at `http://localhost:7860` (or `http://<your-server-ip>:7860` if running on a remote server)
