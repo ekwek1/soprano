@@ -52,8 +52,11 @@ def generate_speech(
         # Convert to numpy array for Gradio
         audio_np = audio.cpu().numpy()
 
+        # Convert to int16 format (Gradio expects 16-bit PCM audio)
+        audio_int16 = (audio_np * 32767).astype(np.int16)
+
         # Return sample rate and audio
-        return (32000, audio_np), f"✓ Generated {len(audio_np) / 32000:.2f} seconds of audio"
+        return (32000, audio_int16), f"✓ Generated {len(audio_np) / 32000:.2f} seconds of audio"
 
     except Exception as e:
         return None, f"✗ Error: {str(e)}"
