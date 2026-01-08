@@ -1,4 +1,4 @@
-<!-- Version 0.0.2 -->
+<!-- Version 0.0.3 -->
 <div align="center">
   
   # Soprano: Instant, Ultra‑Realistic Text‑to‑Speech 
@@ -21,7 +21,7 @@ With only **80M parameters**, Soprano achieves a real‑time factor (RTF) of **~
 
 ## Installation
 
-**Requirements**: Linux or Windows, CUDA‑enabled GPU required (CPU support coming soon!).
+**Requirements**: Linux or Windows, CUDA‑enabled GPU recommended (CPU support now available!).
 
 ### Install with wheel
 
@@ -41,7 +41,7 @@ pip uninstall -y torch
 pip install torch==2.8.0 --index-url https://download.pytorch.org/whl/cu126
 ```
 
-> **Note**: Soprano uses **LMDeploy** to accelerate inference by default. If LMDeploy cannot be installed in your environment, Soprano can fall back to the HuggingFace **transformers** backend (with slower performance). To enable this, pass `backend='transformers'` when creating the TTS model.
+> **Note**: Soprano uses **LMDeploy** to accelerate inference by default on CUDA devices. If LMDeploy cannot be installed in your environment, Soprano will automatically fall back to the HuggingFace **transformers** backend. On CPU, the transformers backend is used by default.
 
 ---
 
@@ -50,10 +50,14 @@ pip install torch==2.8.0 --index-url https://download.pytorch.org/whl/cu126
 ```python
 from soprano import SopranoTTS
 
+# Automatically detects available device (cuda/cpu)
 model = SopranoTTS(backend='auto', device='cuda', cache_size_mb=10, decoder_batch_size=1)
+
+# For CPU usage
+model = SopranoTTS(backend='auto', device='cpu', decoder_batch_size=1)
 ```
 
-> **Tip**: You can increase cache_size_mb and decoder_batch_size to increase inference speed at the cost of higher memory usage.
+> **Tip**: You can increase cache_size_mb (CUDA only) and decoder_batch_size to increase inference speed at the cost of higher memory usage.
 
 ### Basic inference
 
@@ -126,7 +130,7 @@ Instead of slow diffusion decoders, Soprano uses a **vocoder‑based decoder** w
 
 ### 3. Seamless Streaming
 
-Soprano leverages the decoder’s finite receptive field to losslessly stream audio with ultra‑low latency. The streamed output is acoustically identical to offline synthesis, and streaming can begin after generating just 5 audio tokens, enabling **<15 ms latency**.
+Soprano leverages the decoder's finite receptive field to losslessly stream audio with ultra‑low latency. The streamed output is acoustically identical to offline synthesis, and streaming can begin after generating just 5 audio tokens, enabling **<15 ms latency**.
 
 ### 4. State‑of‑the‑art neural audio codec
 
@@ -136,11 +140,34 @@ Speech is represented using a **neural codec** that compresses audio to **~15 to
 
 Each sentence is generated independently, enabling **effectively infinite generation length** while maintaining stability and real‑time performance for long‑form generation.
 
+### 6. Cross‑platform compatibility
+
+Soprano now supports both **CUDA GPUs** and **CPU inference**, making it accessible on a wide range of hardware. While GPU acceleration provides optimal performance, CPU mode enables deployment on systems without dedicated graphics hardware.
+
+---
+
+## Update
+
+### Version 0.0.3 - CPU Support
+
+* ✅ **CPU support** - Soprano now works on both CUDA and CPU devices
+* ✅ **Automatic device detection** - The model automatically selects the best backend for your hardware
+* ✅ **Device-agnostic inference** - All components (language model, decoder, vocos) work seamlessly on both platforms
+* ✅ **Updated Gradio demo** - Demo app now automatically detects and runs on available hardware
+
+**Performance Notes:**
+- CUDA: ~2000× real-time factor with optimal settings
+- CPU: Slower than CUDA but fully functional for offline generation and testing
+
+**Backend Selection:**
+- CUDA device → LMDeploy (if available) or Transformers backend
+- CPU device → Transformers backend (optimized for CPU with float32 precision)
+
 ---
 
 ## Limitations
 
-I’m a second-year undergrad who’s just started working on TTS models, so I wanted to start small. Soprano was only pretrained on 1000 hours of audio (~100x less than other TTS models), so its stability and quality will improve tremendously as I train it on more data. Also, I optimized Soprano purely for speed, which is why it lacks bells and whistles like voice cloning, style control, and multilingual support. Now that I have experience creating TTS models, I have a lot of ideas for how to make Soprano even better in the future, so stay tuned for those!
+I'm a second-year undergrad who's just started working on TTS models, so I wanted to start small. Soprano was only pretrained on 1000 hours of audio (~100x less than other TTS models), so its stability and quality will improve tremendously as I train it on more data. Also, I optimized Soprano purely for speed, which is why it lacks bells and whistles like voice cloning, style control, and multilingual support. Now that I have experience creating TTS models, I have a lot of ideas for how to make Soprano even better in the future, so stay tuned for those!
 
 ---
 
@@ -149,10 +176,10 @@ I’m a second-year undergrad who’s just started working on TTS models, so I w
 * [x] Add model and inference code
 * [x] Seamless streaming
 * [x] Batched inference
+* [x] CPU support
 * [ ] Command-line interface (CLI)
 * [ ] Server / API inference
 * [ ] Additional LLM backends
-* [ ] CPU support
 * [ ] Voice cloning
 * [ ] Multilingual support
 
