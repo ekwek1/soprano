@@ -20,7 +20,8 @@ dependencies = [
   "torch",
   "unidecode",
   "inflect",
-  "scipy"
+  "scipy",
+  "sounddevice"
 ]
 license = {file = "LICENSE"}
 
