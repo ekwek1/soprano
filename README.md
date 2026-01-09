@@ -24,52 +24,7 @@
 - **Interactive CLI** - Command-line interface for quick usage
 - **Streaming support** - Real-time audio generation capabilities
 
-## Installation
 
-```bash
-pip install soprano-tts
-```
-
-## Quick Start
-
-### Using the CLI
-
-```bash
-# Launch the interactive CLI
-soprano
-
-# Customize backend and cache size
-soprano --backend transformers --cache-size 50
-```
-
-### Using the Python API
-
-```python
-from soprano import SopranoTTS
-
-# Initialize the TTS model
-tts = SopranoTTS(device='cuda')  # Use 'cpu' if CUDA is not available
-
-# Generate speech
-audio = tts.infer("Hello, welcome to Soprano TTS!")
-
-# Save to file
-tts.infer("Hello world!", out_path="output.wav")
-```
-
-### Using the REST API
-
-```bash
-# Start the API server
-cd soprano/server
-python api.py
-
-# Make requests to the API
-curl -X POST http://localhost:8000/v1/audio/speech \
-  -H "Content-Type: application/json" \
-  -d '{"input": "Hello, this is Soprano TTS!", "model": "soprano"}' \
-  --output output.wav
-```
 
 ## Architecture
 
@@ -82,32 +37,12 @@ Soprano TTS is built with a modular architecture:
 - **Interactive CLI** - User-friendly command-line experience
 
 ## Future Roadmap
+- [ ] Web Socket for real time streaming and audio playback.
+- [ ] Web UI for User Interaction
+- [ ] LLM Intregation
 
-We're constantly enhancing Soprano TTS with innovative features:
 
-### WebUI for Visual Voice Management
-
-An intuitive web-based interface for comprehensive voice control:
-
-- **Visual Parameter Adjustment** - Drag-and-drop controls for pitch, speed, and tone
-- **Real-time Previews** - Instant playback of voice modifications
-- **Profile Management** - Save and share custom voice configurations
-- **Advanced Editing Tools** - Format and segment text with ease
-- **Batch Processing** - Handle multiple text inputs simultaneously
-- **Multi-format Export** - Download in various audio formats
-
-### WebSocket Integration for Real-Time Streaming
-
-Low-latency audio streaming for interactive applications:
-
-- **Ultra-low Latency** - Sub-millisecond response times for live streaming
-- **Bidirectional Communication** - Full-duplex interaction capabilities
-- **Streaming Synthesis** - Continuous audio generation for long texts
-- **Real-time Feedback** - Dynamic adjustments during playback
-- **Optimized Buffering** - Consistent quality with intelligent caching
-- **Resilient Connections** - Automatic recovery from network interruptions
-
-These enhancements will extend the existing REST API in `soprano/server/api.py`, providing both traditional HTTP endpoints and real-time streaming capabilities for diverse use cases.
+These features will build upon the recently added REST API located in `soprano/server/api.py`.
 
 ## Contributing
 
