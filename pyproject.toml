@@ -16,15 +16,27 @@ classifiers = [
     "Operating System :: OS Independent",
 ]
 dependencies = [
+  "fastapi",
+  "huggingface_hub",
   "lmdeploy",
+  "numpy",
+  "scipy",
   "torch",
   "unidecode",
+<<<<<<< HEAD
   "inflect",
   "scipy",
   "sounddevice"
+=======
+  "uvicorn",
+  "inflect"
+>>>>>>> upstream/main
 ]
 license = {file = "LICENSE"}
 
 [project.urls]
 Homepage = "https://github.com/ekwek1/soprano"
 Issues = "https://github.com/ekwek1/soprano/issues"
+
+[project.scripts]
+soprano = "soprano.soprano_cli:main"
