@@ -37,16 +37,26 @@ uv pip install -e .[cuda]
 pip install -e .[rocm]
 # or if you use uv:
 uv pip install -e .[rocm]
+
+# Install lmdeploy for ROCm (recommended for best performance)
+LMDEPLOY_TARGET_DEVICE=rocm pip install git+https://github.com/InternLM/lmdeploy.git
+# or with uv:
+LMDEPLOY_TARGET_DEVICE=rocm uv pip install git+https://github.com/InternLM/lmdeploy.git
 ```
 
 > **Note**:
-> - **CUDA variant** includes **LMDeploy** for accelerated inference (faster performance)
-> - **ROCm variant** uses the HuggingFace **transformers** backend only (LMDeploy has NVIDIA-specific dependencies)
-> - When using ROCm, the model will automatically use `backend='transformers'` or you can specify it explicitly
 > - **ROCm users**: You may need to set the `HSA_OVERRIDE_GFX_VERSION` environment variable to match your GPU architecture, for example:
 >   ```bash
 >   export HSA_OVERRIDE_GFX_VERSION=11.0.0
 >   ```
+> - **ROCm backends**: Both `lmdeploy` and `transformers` backends are fully supported on ROCm:
+>   - `lmdeploy` (default with `backend='auto'`): Faster inference, recommended for production
+>   - `transformers`: Alternative backend, useful for debugging or compatibility
+> - **ROCm Triton compatibility**: Torch compilation must be disabled on ROCm. Set this before running:
+>   ```bash
+>   export TORCH_COMPILE_DISABLE=1
+>   ```
+>   This resolves compatibility issues between pytorch-triton-rocm and PyTorch's inductor backend.
 
 ---
 
@@ -60,8 +70,9 @@ pip install gradio==6.2.0
 # or if you use uv:
 uv pip install gradio==6.2.0
 
-# ROCm users: set HSA_OVERRIDE_GFX_VERSION before running
+# ROCm users: set environment variables before running
 # export HSA_OVERRIDE_GFX_VERSION=11.0.0
+# export TORCH_COMPILE_DISABLE=1
 # Run the web interface (accessible at 0.0.0.0:7860)
 python gradio_app.py
 ```
@@ -81,7 +92,12 @@ The Gradio interface provides:
 ```python
 from soprano import SopranoTTS
 
+# CUDA (NVIDIA) and ROCm (AMD)
 model = SopranoTTS(backend='auto', device='cuda', cache_size_mb=10, decoder_batch_size=1)
+
+# Or explicitly specify backend
+model = SopranoTTS(backend='lmdeploy', device='cuda', cache_size_mb=10, decoder_batch_size=1)  # Faster
+model = SopranoTTS(backend='transformers', device='cuda', cache_size_mb=10, decoder_batch_size=1)  # Alternative
 ```
 
 > **Tip**: You can increase cache_size_mb and decoder_batch_size to increase inference speed at the cost of higher memory usage.

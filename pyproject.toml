@@ -33,7 +33,9 @@ cuda = [
 rocm = [
   "torch==2.8.0",
   "torchaudio==2.8.0",
-  "pytorch-triton-rocm"
+  "pytorch-triton-rocm",
+  "datasets",
+  "prometheus_client"
 ]
 
 [project.urls]
