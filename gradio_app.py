@@ -42,21 +42,33 @@ def get_model(backend='auto'):
 
     if model is None:
         print(f"Loading Soprano TTS model with backend={backend}...")
+        
+        # Check for GPU availability
+        cuda_available = torch.cuda.is_available()
+        device_type = 'cuda' if cuda_available else 'cpu'
+        
         model = SopranoTTS(
             backend=backend,
-            device='cuda' if torch.cuda.is_available() else 'cpu',
+            device=device_type,
             cache_size_mb=10,
             decoder_batch_size=1
         )
 
         # Get backend info
         backend_name = get_backend_name(model)
-        device_name = torch.cuda.get_device_name(0) if torch.cuda.is_available() else 'CPU'
-        is_rocm = 'Radeon' in device_name or 'AMD' in device_name
-        backend_info = f"**Backend:** {backend_name} | **Device:** {device_name} {'(ROCm)' if is_rocm else '(CUDA)'}"
-        current_backend = backend
+        
+        if cuda_available:
+            device_name = torch.cuda.get_device_name(0)
+            is_rocm = 'Radeon' in device_name or 'AMD' in device_name
+            gpu_tag = "(ROCm)" if is_rocm else "(CUDA)"
+            backend_info = f"**Backend:** {backend_name} | **Device:** {device_name} {gpu_tag}"
+        else:
+            # Clean display for CPU
+            backend_info = f"**Backend:** {backend_name} | **Device:** CPU"
 
-        print(f"Model loaded successfully! Using {backend_name} backend on {device_name}")
+        current_backend = backend
+        print(f"Model loaded successfully! Using {backend_name} backend on {device_type.upper()}")
+        
     return model
 
 def reload_model(backend_choice):
