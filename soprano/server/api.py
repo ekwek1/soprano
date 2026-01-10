@@ -1,7 +1,6 @@
 import asyncio
 import io
 import logging
-import os
 import time
 from typing import Optional, Dict, Any, AsyncGenerator
 import numpy as np
@@ -95,8 +94,9 @@ class SpeechRequest(BaseModel):
     response_format: Optional[str] = Field("wav", description="Response format (only wav supported)")
     speed: Optional[float] = Field(None, ge=0.1, le=2.0, description="Speech speed (not implemented yet)")
     temperature: Optional[float] = Field(0.3, ge=0.0, le=1.0, description="Generation temperature")
-    top_p: Optional[float] = Field(0.95, ge=0.0, le=1.0, description="Top-p sampling parameter")
+    top_p: Optional[float] = Field(1.0, ge=0.0, le=1.0, description="Top-p sampling parameter")
     repetition_penalty: Optional[float] = Field(1.2, ge=0.1, le=2.0, description="Repetition penalty")
+    min_text_length: Optional[int] = Field(30, ge=1, le=1000, description="Minimum text length for processing (default 30)")
 
 
 class TTSManager:
@@ -134,7 +134,7 @@ class TTSManager:
                 logger.info("Loading Soprano TTS model...")
                 try:
                     # Run model initialization in a thread pool to avoid blocking
-                    loop = asyncio.get_event_loop()
+                    loop = asyncio.get_running_loop()
 
                     # Use retry mechanism for model loading
                     def load_model():
@@ -160,7 +160,7 @@ class TTSManager:
             raise RuntimeError("TTS model not initialized. Call initialize_model() first.")
         return self.tts
 
-    def generate_audio(self, text: str, top_p: float, temperature: float, repetition_penalty: float):
+    def generate_audio(self, text: str, top_p: float, temperature: float, repetition_penalty: float, min_text_length: int = 30):
         """
         Generate audio with circuit breaker protection and retry mechanism.
         """
@@ -169,7 +169,8 @@ class TTSManager:
                 text=text,
                 top_p=top_p,
                 temperature=temperature,
-                repetition_penalty=repetition_penalty
+                repetition_penalty=repetition_penalty,
+                min_text_length=min_text_length
             )
 
         # Use circuit breaker to protect against repeated failures
@@ -188,11 +189,6 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
         tts_manager = TTSManager()
         await tts_manager.initialize_model()
 
-        # Perform initial cleanup of old files
-        output_dir = "audio_output"
-        os.makedirs(output_dir, exist_ok=True)
-        cleanup_old_files(output_dir)
-
         logger.info("Soprano TTS API server started successfully")
         yield
     except Exception as e:
@@ -202,7 +198,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
         logger.info("Shutting down Soprano TTS API server...")
 
 
-# Create FastAPI app with metadata
+# Create FastAPI app with performance optimizations
 app = FastAPI(
     title="Soprano TTS API",
     description="Ultra-realistic Text-to-Speech API based on Soprano model",
@@ -211,83 +207,29 @@ app = FastAPI(
         "name": "Soprano TTS",
         "url": "https://github.com/ekwek1/soprano",
     },
-    lifespan=lifespan
+    lifespan=lifespan,
+    # Performance optimizations
+    timeout=60,  # Increase timeout for longer texts
 )
 
 
 def _tensor_to_wav_bytes(tensor: Tensor) -> bytes:
     """
-    Convert a 1D fp32 torch tensor to a WAV byte stream.
+    Convert a 1D fp32 torch tensor to a WAV byte stream efficiently.
     """
     # Convert to numpy array
     audio_np = tensor.cpu().numpy()
 
-    # Normalize to int16 range if needed
-    if audio_np.dtype != np.int16:
-        # Ensure values are in the range [-1, 1]
-        audio_np = np.clip(audio_np, -1.0, 1.0)
-        # Convert to int16
-        audio_np = (audio_np * 32767).astype(np.int16)
+    # Ensure values are in the range [-1, 1] and convert to int16 in one step
+    audio_np = np.clip(audio_np, -1.0, 1.0)
+    audio_np = (audio_np * 32767).astype(np.int16)
 
-    # Create in-memory WAV file
+    # Create in-memory WAV file directly without intermediate buffer
     wav_io = io.BytesIO()
     write(wav_io, 32000, audio_np)  # 32kHz sample rate
-    wav_io.seek(0)
-    return wav_io.read()
+    return wav_io.getvalue()  # Use getvalue() instead of seek() + read()
 
 
-def cleanup_old_files(directory: str, max_age_hours: int = 24, max_files: int = 100):
-    """
-    Clean up old files in the specified directory to prevent unlimited growth.
-
-    Args:
-        directory: Directory to clean up
-        max_age_hours: Maximum age of files in hours
-        max_files: Maximum number of files to keep
-    """
-    import time
-    try:
-        files = []
-        for filename in os.listdir(directory):
-            filepath = os.path.join(directory, filename)
-            if os.path.isfile(filepath):
-                files.append((filepath, os.path.getctime(filepath)))
-
-        # Sort by creation time (oldest first)
-        files.sort(key=lambda x: x[1])
-
-        current_time = time.time()
-        cutoff_time = current_time - (max_age_hours * 3600)
-
-        # Remove files older than cutoff time
-        removed_count = 0
-        for filepath, creation_time in files:
-            if creation_time < cutoff_time:
-                try:
-                    os.remove(filepath)
-                    removed_count += 1
-                    logger.info(f"Removed old file: {filepath}")
-                except OSError as e:
-                    logger.error(f"Failed to remove old file {filepath}: {e}")
-
-        # If still too many files, remove oldest ones beyond the limit
-        remaining_files = len(files) - removed_count
-        if remaining_files > max_files:
-            excess_count = remaining_files - max_files
-            for i in range(excess_count):
-                if i < len(files) - removed_count:
-                    filepath = files[i][0]
-                    try:
-                        os.remove(filepath)
-                        removed_count += 1
-                        logger.info(f"Removed excess file: {filepath}")
-                    except OSError as e:
-                        logger.error(f"Failed to remove excess file {filepath}: {e}")
-
-        if removed_count > 0:
-            logger.info(f"Cleaned up {removed_count} old files from {directory}")
-    except Exception as e:
-        logger.error(f"Error during file cleanup: {e}")
 
 
 
@@ -326,7 +268,8 @@ async def create_speech(request: SpeechRequest):
                 text=request.input,
                 top_p=request.top_p,
                 temperature=request.temperature,
-                repetition_penalty=request.repetition_penalty
+                repetition_penalty=request.repetition_penalty,
+                min_text_length=request.min_text_length
             )
         except Exception as e:
             logger.error(f"Circuit breaker or retry mechanism failed: {str(e)}", exc_info=True)
@@ -338,41 +281,12 @@ async def create_speech(request: SpeechRequest):
         # Convert tensor to WAV bytes
         wav_bytes = _tensor_to_wav_bytes(audio_tensor)
 
-        # Create audio_output directory if it doesn't exist
-        output_dir = "audio_output"
-        os.makedirs(output_dir, exist_ok=True)
-
-        # Generate unique filename with sequential numbering
-        file_counter = 1
-        while True:
-            filename = f"output_{file_counter}.wav"
-            filepath = os.path.join(output_dir, filename)
-            if not os.path.exists(filepath):
-                break
-            file_counter += 1
-
-        # Prevent path traversal by ensuring filename is safe
-        if '..' in filename or '/' in filename or '\\' in filename:
-            raise HTTPException(
-                status_code=400,
-                detail="Invalid characters in text that could lead to path traversal."
-            )
-
-        # Save the audio file to the audio_output directory with error handling
-        try:
-            with open(filepath, 'wb') as f:
-                f.write(wav_bytes)
-            logger.info(f"Audio saved to: {filepath}")
-        except OSError as e:
-            logger.error(f"Failed to save audio file: {e}")
-            raise HTTPException(
-                status_code=500,
-                detail=f"Failed to save audio file: {str(e)}"
-            )
-
         logger.info(f"TTS generation completed successfully.")
 
-        # Return WAV response
+        # Generate a generic filename for the response
+        filename = "speech_output.wav"
+
+        # Return WAV response directly to client without saving on server
         return Response(
             content=wav_bytes,
             media_type="audio/wav",

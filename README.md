@@ -1,63 +1,47 @@
-<div align="center">
-
 # Soprano TTS
 
-**Ultra-realistic Text-to-Speech System**
+Soprano is an ultra-realistic Text-to-Speech system that provides both REST API and WebSocket streaming capabilities.
 
-[![License](https://img.shields.io/github/license/ekwek1/soprano)](LICENSE)
-[![Python Version](https://img.shields.io/pypi/pyversions/soprano-tts)](https://pypi.org/project/soprano-tts/)
-[![PyPI Version](https://img.shields.io/pypi/v/soprano-tts)](https://pypi.org/project/soprano-tts/)
-[![GitHub](https://img.shields.io/badge/GitHub-Original%20Repo-blue?logo=github)](https://github.com/ekwek1/soprano)
-[![Hugging Face](https://img.shields.io/badge/%F0%9F%A4%97-Hugging%20Face-orange)](https://huggingface.co/ekwek1/soprano)
-[![Gradio](https://img.shields.io/badge/Demo-Live%20on%20HF-green)](https://huggingface.co/spaces/ekwek1/soprano)
+## Features
 
-*Soprano delivers high-quality, natural-sounding speech synthesis with minimal latency using cutting-edge deep learning techniques.*
+- **High Quality Audio**: Generates ultra-realistic speech using advanced TTS models
+- **Multiple Interfaces**: REST API and WebSocket streaming options
+- **OpenAI Compatible**: Follows OpenAI's speech endpoint format
+- **Real-time Streaming**: WebSocket support for real-time audio streaming
+- **Configurable Parameters**: Supports temperature, top_p, repetition_penalty, and min_text_length controls
 
-</div>
+## Components
 
-## Key Features
+- **API Server**: RESTful API with OpenAI-compatible endpoints
+- **WebSocket Server**: Real-time audio streaming via WebSocket
+- **CLI Interface**: Interactive command-line interface
+- **Test Clients**: Dedicated test clients for both API and WebSocket
 
-- **High-fidelity audio** - Crystal-clear speech synthesis
-- **GPU acceleration** - Support for both CPU and CUDA
-- **Multiple backends** - Transformers & LMDeploy with auto-selection
-- **REST API** - Easy HTTP integration
-- **Interactive CLI** - Command-line interface for quick usage
-- **Streaming support** - Real-time audio generation capabilities
+## Quick Start
 
+### Using the Launcher
+Run `Soprano.bat` to access the main menu with options to launch any component.
 
+### API Server
+Start the API server and send requests to `http://localhost:8000/v1/audio/speech`
 
-## Architecture
+### WebSocket Server
+Start the WebSocket server and connect to `ws://localhost:8001/ws/tts`
 
-Soprano TTS is built with a modular architecture:
+## Endpoints
 
-- **Core Engine** - Advanced synthesis engine for text processing
-- **Adaptive Backends** - Multiple inference options with smart selection
-- **Custom Decoder** - Specialized vocoder for high-quality audio
-- **RESTful API** - FastAPI-powered HTTP interface
-- **Interactive CLI** - User-friendly command-line experience
+### API
+- `POST /v1/audio/speech` - Generate speech from text
+- `GET /health` - Health check endpoint
+- `GET /` - Root endpoint with API information
 
-## Future Roadmap
-- [ ] Web Socket for real time streaming and audio playback.
-- [ ] Web UI for User Interaction
-- [ ] LLM Intregation
+### WebSocket
+- `ws://localhost:8001/ws/tts` - Real-time TTS streaming
 
+## Integration
 
-These features will build upon the recently added REST API located in `soprano/server/api.py`.
-
-## Contributing
-
-We welcome contributions! Please see our contributing guidelines for details on how to participate in the project.
+The API is designed for easy integration with workflow automation platforms like n8n, Zapier, and other systems that can make HTTP requests.
 
 ## License
 
-This project is licensed under the terms specified in the [LICENSE](LICENSE) file.
-
----
-
-<div align="center">
-
-For the open-source community
-
-[GitHub](https://github.com/ekwek1/soprano) • [Issues](https://github.com/ekwek1/soprano/issues)
-
-</div>
+Licensed under the Apache License 2.0 - see the [LICENSE](LICENSE) file for details.

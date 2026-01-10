@@ -95,11 +95,13 @@ class SopranoTTS:
             out_path=None,
             top_p=0.95,
             temperature=0.3,
-            repetition_penalty=1.2):
+            repetition_penalty=1.2,
+            min_text_length=30):
         results = self.infer_batch([text],
             top_p=top_p,
             temperature=temperature,
             repetition_penalty=repetition_penalty,
+            min_text_length=min_text_length,
             out_dir=None)[0]
         if out_path:
             wavfile.write(out_path, 32000, results.cpu().numpy())
@@ -110,8 +112,9 @@ class SopranoTTS:
             out_dir=None,
             top_p=0.95,
             temperature=0.3,
-            repetition_penalty=1.2):
-        sentence_data = self._preprocess_text(texts)
+            repetition_penalty=1.2,
+            min_text_length=30):
+        sentence_data = self._preprocess_text(texts, min_length=min_text_length)
         prompts = list(map(lambda x: x[0], sentence_data))
         responses = self.pipeline.infer(prompts,
             top_p=top_p,
@@ -143,13 +146,13 @@ class SopranoTTS:
             batch_hidden_states = torch.cat(batch_hidden_states)
             with torch.no_grad():
                 audio = self.decoder(batch_hidden_states)
-            
+
             for i in range(N):
                 text_id = sentence_data[idx+i][1]
                 sentence_id = sentence_data[idx+i][2]
                 audio_concat[text_id][sentence_id] = audio[i].squeeze()[-(lengths[i]*self.TOKEN_SIZE-self.TOKEN_SIZE):]
         audio_concat = [torch.cat(x).cpu() for x in audio_concat]
-        
+
         if out_dir:
             os.makedirs(out_dir, exist_ok=True)
             for i in range(len(audio_concat)):
@@ -161,9 +164,10 @@ class SopranoTTS:
             chunk_size=1,
             top_p=0.95,
             temperature=0.3,
-            repetition_penalty=1.2):
+            repetition_penalty=1.2,
+            min_text_length=30):
         start_time = time.time()
-        sentence_data = self._preprocess_text([text])
+        sentence_data = self._preprocess_text([text], min_length=min_text_length)
 
         first_chunk = True
         for sentence, _, _ in sentence_data:
