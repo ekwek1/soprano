@@ -61,11 +61,13 @@ class LMDeployModel(BaseModel):
 
                 # During autoregressive generation, we get one call per generated token
                 # We only want the last token's hidden state from each forward pass
+                # Keep on GPU - no need to transfer to CPU since we use it immediately on GPU
                 if hidden_states.dim() == 3:
                     # (batch, seq_len, hidden_dim) - take last position
-                    self.captured_hidden_states.append(hidden_states[:, -1:, :].detach().cpu())
+                    # Detach to avoid gradient tracking, keep on GPU
+                    self.captured_hidden_states.append(hidden_states[:, -1:, :].detach())
                 else:
-                    self.captured_hidden_states.append(hidden_states.detach().cpu())
+                    self.captured_hidden_states.append(hidden_states.detach())
 
             # Register hook on the final normalization layer
             if hasattr(model, 'model') and hasattr(model.model, 'norm'):
@@ -107,6 +109,7 @@ class LMDeployModel(BaseModel):
                     #     print(f"DEBUG: First capture shape: {self.captured_hidden_states[0].shape}")
 
                     # Stack all captures: each is (batch, 1, hidden_dim)
+                    # All tensors are already on GPU, no need to move
                     stacked = torch.cat(self.captured_hidden_states, dim=1)  # (batch, total_tokens, hidden_dim)
 
                     # Extract for this batch item
@@ -126,7 +129,7 @@ class LMDeployModel(BaseModel):
                             # Take last num_generated tokens
                             hidden_state = hidden_state[-num_generated:, :]
 
-                        hidden_state = hidden_state.cuda()
+                        # hidden_state already on GPU, no need to move
                     else:
                         hidden_state = None
                 except Exception as e:
@@ -162,9 +165,9 @@ class LMDeployModel(BaseModel):
         responses = self.pipeline.stream_infer([prompt], gen_config=gen_config)
 
         for response in responses:
-            # On ROCm, use captured hidden states
+            # On ROCm, use captured hidden states (already on GPU)
             if self.is_rocm and len(self.captured_hidden_states) > token_count:
-                hidden_state = self.captured_hidden_states[token_count].cuda()
+                hidden_state = self.captured_hidden_states[token_count]
                 token_count += 1
             else:
                 hidden_state = response.last_hidden_state
