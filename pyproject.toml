@@ -16,12 +16,17 @@ classifiers = [
     "Operating System :: OS Independent",
 ]
 dependencies = [
-  "torch>=2.1.0",
-  "unidecode",
-  "inflect",
+  "accelerate",
+  "fastapi",
+  "gradio",
+  "huggingface_hub",
+  "numpy",
   "scipy",
+  "torch>=2.1.0",
   "transformers>=4.51.0",
-  "accelerate"
+  "unidecode",
+  "uvicorn",
+  "inflect"
 ]
 license = {file = "LICENSE"}
 
@@ -31,3 +36,7 @@ lmdeploy = ["lmdeploy"]
 [project.urls]
 Homepage = "https://github.com/ekwek1/soprano"
 Issues = "https://github.com/ekwek1/soprano/issues"
+
+[project.scripts]
+soprano = "soprano.soprano_cli:main"
+soprano-webui = "soprano.webui:main"

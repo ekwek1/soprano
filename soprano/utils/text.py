@@ -2,7 +2,6 @@
 Normalize input text to a format that Soprano recognizes.
 Adapted from https://github.com/neonbjb/tortoise-tts/blob/main/tortoise/utils/tokenizer.py
 """
-import os
 import re
 
 import inflect
@@ -15,7 +14,7 @@ _inflect = inflect.engine()
 # Abbreviations
 
 _abbreviations = [(re.compile('\\b%s\\.' % x[0], re.IGNORECASE), x[1]) for x in [
-    ('mrs', 'misuss'),
+    ('mrs', 'misess'),
     ('ms', 'miss'),
     ('mr', 'mister'),
     ('dr', 'doctor'),
@@ -56,7 +55,15 @@ _cased_abbreviations = [(re.compile('\\b%s\\b' % x[0]), x[1]) for x in [
     ('GPUs', 'g p u\'s'),
     ('GPU', 'g p u'),
     ('Ave', 'avenue'),
-    ('etc', 'etcetera'),
+    ('etc', 'et cetera'),
+    ('Mon', 'monday'),
+    ('Tues', 'tuesday'),
+    ('Wed', 'wednesday'),
+    ('Thurs', 'thursday'),
+    ('Fri', 'friday'),
+    ('Sat', 'saturday'),
+    ('Sun', 'sunday'),
+    ('and/or', 'and or'),
 ]]
 
 def expand_abbreviations(text):
@@ -68,7 +75,7 @@ def expand_abbreviations(text):
 # Numbers
 
 _num_prefix_re = re.compile(r'#\d')
-_num_suffix_re = re.compile(r'\d(K|M|B|T)', re.IGNORECASE)
+_num_suffix_re = re.compile(r'\b\d+(K|M|B|T)\b', re.IGNORECASE)
 _num_letter_split_re = re.compile(r'(\d[a-z]|[a-z]\d)', re.IGNORECASE)
 
 _comma_number_re = re.compile(r'(\d[\d\,]+\d)')
@@ -201,8 +208,6 @@ def _expand_number(m):
 def normalize_numbers(text):
     text = re.sub(_num_prefix_re, _expand_num_prefix, text)
     text = re.sub(_num_suffix_re, _expand_num_suffix, text)
-    for _ in range(2): # need to do this twice to find all matches
-        text = re.sub(_num_letter_split_re, _split_alphanumeric, text)
     text = re.sub(_comma_number_re, _remove_commas, text)
     text = re.sub(_date_re, _expand_date, text)
     text = re.sub(_phone_number_re, _expand_phone_number, text)
@@ -217,6 +222,8 @@ def normalize_numbers(text):
 
     text = re.sub(_fraction_re, _expand_fraction, text)
     text = re.sub(_ordinal_re, _expand_ordinal, text)
+    for _ in range(2): # need to do this twice to find all matches
+        text = re.sub(_num_letter_split_re, _split_alphanumeric, text)
     text = re.sub(_number_re, _expand_number, text)
     return text
 
@@ -240,6 +247,7 @@ _special_characters = [(re.compile(x[0]), x[1]) for x in [
     ('=', ' equals '),
     ('/', ' slash '),
     ('_', ' '),
+    (r'\*', ' '),
 ]]
 _link_header_re = re.compile(r'(https?://)')
 _dash_re = re.compile(r'(. - .)')
@@ -288,8 +296,8 @@ def convert_to_ascii(text):
 def normalize_newlines(text):
     text = text.split('\n')
     for i in range(len(text)):
-        if not text[i]: continue
         text[i] = text[i].strip()
+        if not text[i]: continue
         if text[i][-1] not in '.!?':
             text[i] = f"{text[i]}."
     return ' '.join(text)
@@ -302,7 +310,7 @@ def remove_unknown_characters(text):
 def collapse_whitespace(text):
     text = re.sub(r'\s+', ' ', text)
     text = re.sub(r' [.\?!,]', lambda m: m.group(0)[1], text)
-    return text
+    return text.strip()
 
 def dedup_punctuation(text):
     text = re.sub(r"\.\.\.+", "[ELLIPSIS]", text)
@@ -328,62 +336,66 @@ def clean_text(text):
 
 
 if __name__ == '__main__':
-    print(normalize_numbers('1,2,3,456,176'))
-    print(normalize_numbers('123,456,789'))
-    print(normalize_numbers('123,456,789th'))
-    print(normalize_numbers('123-456-7890'))
-    print(normalize_numbers('111-111-1111'))
-    print(normalize_numbers('(111) 111-1111'))
-    print(normalize_numbers('A(111) 111-1111'))
-    print(normalize_numbers('A (111) 111-1111'))
-    print(normalize_numbers('$2.47'))
-    print(normalize_numbers('$247'))
-    print(normalize_numbers('$0.27'))
-    print(normalize_numbers('$1.00'))
-    print(normalize_numbers('£20'))
+    print(clean_text('1,2,3,456,176'))
+    print(clean_text('123,456,789'))
+    print(clean_text('123,456,789th'))
+    print(clean_text('123-456-7890'))
+    print(clean_text('111-111-1111'))
+    print(clean_text('(111) 111-1111'))
+    print(clean_text('A(111) 111-1111'))
+    print(clean_text('A (111) 111-1111'))
+    print(clean_text('$2.47'))
+    print(clean_text('$247'))
+    print(clean_text('$0.27'))
+    print(clean_text('$1.00'))
+    print(clean_text('£20'))
     for i in range(1990, 2030):
-        print(normalize_numbers(str(i)))
-    print(normalize_numbers('2656'))
-    print(normalize_numbers('1024'))
-    print(normalize_numbers('2.47023'))
-    print(normalize_numbers('20.47023'))
-    print(normalize_numbers('1.17.1.1'))
-    print(normalize_numbers('111.111.1111'))
-    print(normalize_numbers('1/1/2025'))
-    print(normalize_numbers('1-1-2025'))
-    print(normalize_numbers('1-1-25'))
-    print(normalize_numbers('A 1/1/11 A'))
-    print(normalize_numbers('A 1/1 A'))
-    print(normalize_numbers('1/1'))
-    print(normalize_numbers('1/10'))
-    print(normalize_numbers('1/1/10'))
-    print(normalize_numbers('11/1/1/10'))
+        print(clean_text(str(i)))
+    print(clean_text('2656'))
+    print(clean_text('1024'))
+    print(clean_text('2.47023'))
+    print(clean_text('20.47023'))
+    print(clean_text('1.17.1.1'))
+    print(clean_text('111.111.1111'))
+    print(clean_text('1/1/2025'))
+    print(clean_text('1-1-2025'))
+    print(clean_text('1-1-25'))
+    print(clean_text('A 1/1/11 A'))
+    print(clean_text('A 1/1 A'))
+    print(clean_text('1/1'))
+    print(clean_text('1/10'))
+    print(clean_text('1/1/10'))
+    print(clean_text('11/1/1/10'))
 
-    print(normalize_numbers('0:00'))
-    print(normalize_numbers('12:00'))
-    print(normalize_numbers('13:00'))
-    print(normalize_numbers('8:00'))
-    print(normalize_numbers('8:05'))
-    print(normalize_numbers('8:15'))
-    print(normalize_numbers('0:00:00'))
-    print(normalize_numbers('00:01:10'))
-    print(normalize_numbers('00:10:01'))
-    print(normalize_numbers('01:01:01'))
-    print(normalize_numbers('00:01:00'))
-    print(normalize_numbers('01:00:00'))
+    print(clean_text('0:00'))
+    print(clean_text('12:00'))
+    print(clean_text('13:00'))
+    print(clean_text('8:00'))
+    print(clean_text('8:05'))
+    print(clean_text('8:15'))
+    print(clean_text('0:00:00'))
+    print(clean_text('00:01:10'))
+    print(clean_text('00:10:01'))
+    print(clean_text('01:01:01'))
+    print(clean_text('00:01:00'))
+    print(clean_text('01:00:00'))
 
-    print(normalize_numbers('-1 + 2 * 3 - 4 / 5'))
-    print(normalize_numbers('-1+2*3-5/4/25'))
+    print(clean_text('-1 + 2 * 3 - 4 / 5'))
+    print(clean_text('-1+2*3-5/4/25'))
 
-    print(normalize_numbers('100x1'))
-    print(normalize_numbers('100k'))
-    print(normalize_numbers('100m'))
-    print(normalize_numbers('100b'))
-    print(normalize_numbers('100t'))
+    print(clean_text('100x1'))
+    print(clean_text('100k'))
+    print(clean_text('100m'))
+    print(clean_text('100b'))
+    print(clean_text('100t'))
     
-    print(normalize_numbers('#1'))
+    print(clean_text('#1'))
     
-    print(normalize_numbers('12:00'))
-    print(normalize_numbers('11:59'))
-    print(normalize_numbers('01:00'))
-    print(normalize_numbers('0100'))
+    print(clean_text('12:00'))
+    print(clean_text('11:59'))
+    print(clean_text('01:00'))
+    print(clean_text('0100'))
+
+    print(clean_text('1st 2nd 3rd 4th'))
+    print(clean_text('1K 1M 1B 1T 1K1M1B1T'))
+    print(clean_text('and/or'))

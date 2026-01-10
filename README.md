@@ -21,9 +21,9 @@ With only **80M parameters**, Soprano achieves a real‑time factor (RTF) of **~
 
 ## Installation
 
-**Requirements**: Linux or Windows, CUDA‑enabled GPU required (CPU support coming soon!).
+**Requirements**: Supports CPU, CUDA, and MPS devices on Linux, Windows, and Mac.
 
-### Install with wheel
+### Install with wheel (CUDA-only for now)
 
 ```bash
 pip install soprano-tts
@@ -31,17 +31,23 @@ pip uninstall -y torch
 pip install torch==2.8.0 --index-url https://download.pytorch.org/whl/cu126
 ```
 
-### Install from source
+### Install from source (CUDA)
+
+```bash
+git clone https://github.com/ekwek1/soprano.git
+cd soprano
+pip install -e .[lmdeploy]
+pip uninstall -y torch
+pip install torch==2.8.0 --index-url https://download.pytorch.org/whl/cu126
+```
+
+### Install from source (CPU/MPS)
 
 ```bash
 git clone https://github.com/ekwek1/soprano.git
 cd soprano
 pip install -e .
-pip uninstall -y torch
-pip install torch==2.8.0 --index-url https://download.pytorch.org/whl/cu126
 ```
-
-> **Note**: Soprano uses **LMDeploy** to accelerate inference by default. If LMDeploy cannot be installed in your environment, Soprano can fall back to the HuggingFace **transformers** backend (with slower performance). To enable this, pass `backend='transformers'` when creating the TTS model.
 
 ---
 
@@ -50,7 +56,7 @@ pip install torch==2.8.0 --index-url https://download.pytorch.org/whl/cu126
 ```python
 from soprano import SopranoTTS
 
-model = SopranoTTS(backend='auto', device='cuda', cache_size_mb=10, decoder_batch_size=1)
+model = SopranoTTS(backend='auto', device='cuda', cache_size_mb=100, decoder_batch_size=1)
 ```
 
 > **Tip**: You can increase cache_size_mb and decoder_batch_size to increase inference speed at the cost of higher memory usage.
@@ -105,6 +111,23 @@ for chunk in stream:
 out = torch.cat(chunks)
 ```
 
+### Serve endpoint
+
+```
+uvicorn soprano.server:app --host 0.0.0.0 --port 8000
+```
+
+Compatible with OpenAI speech API. Use the endpoint like this:
+
+```bash
+curl http://localhost:8000/v1/audio/speech \
+  -H "Content-Type: application/json" \
+  -d '{
+    "input": "The quick brown fox jumped over the lazy dog."
+  }' \
+  --output speech.wav
+```
+
 ## Usage tips:
 
 * Soprano works best when each sentence is between 2 and 15 seconds long.
@@ -149,10 +172,10 @@ I’m a second-year undergrad who’s just started working on TTS models, so I w
 * [x] Add model and inference code
 * [x] Seamless streaming
 * [x] Batched inference
-* [ ] Command-line interface (CLI)
-* [ ] Server / API inference
+* [x] Command-line interface (CLI)
+* [x] CPU support
+* [x] Server / API inference
 * [ ] Additional LLM backends
-* [ ] CPU support
 * [ ] Voice cloning
 * [ ] Multilingual support
 

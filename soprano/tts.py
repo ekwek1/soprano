@@ -23,15 +23,13 @@ class SopranoTTS:
         device: Device to run inference on ('cuda', 'cpu', 'mps')
         cache_size_mb: Cache size in MB for lmdeploy backend
         decoder_batch_size: Batch size for decoder
-    
-    Environment Variables:
-        SOPRANO_BACKEND: Override backend selection ('lmdeploy' or 'transformers')
     """
     def __init__(self,
             backend='auto',
             device='cuda',
-            cache_size_mb=10,
-            decoder_batch_size=1):
+            cache_size_mb=100,
+            decoder_batch_size=1,
+            model_path=None):
         RECOGNIZED_DEVICES = ['cuda', 'cpu', 'mps']
         RECOGNIZED_BACKENDS = ['auto', 'lmdeploy', 'transformers']
         
@@ -58,21 +56,23 @@ class SopranoTTS:
                     print(f"Using backend: {backend} (lmdeploy available)")
                 except ImportError:
                     backend = 'transformers'
-                    print(f"Using backend: {backend} (lmdeploy not installed, falling back to transformers)")
-        else:
-            print(f"Using backend: {backend} (explicitly set)")
         assert backend in RECOGNIZED_BACKENDS, f"unrecognized backend {backend}, backend must be in {RECOGNIZED_BACKENDS}"
+        print(f"Using backend {backend}.")
 
         self.device = device
         if backend == 'lmdeploy':
             from .backends.lmdeploy import LMDeployModel
-            self.pipeline = LMDeployModel(device=device, cache_size_mb=cache_size_mb)
+            self.pipeline = LMDeployModel(device=device, cache_size_mb=cache_size_mb, model_path=model_path)
         elif backend == 'transformers':
             from .backends.transformers import TransformersModel
-            self.pipeline = TransformersModel(device=device)
+            self.pipeline = TransformersModel(device=device, model_path=model_path)
 
+        self.device = device
         self.decoder = SopranoDecoder().to(device)
-        decoder_path = hf_hub_download(repo_id='ekwek/Soprano-80M', filename='decoder.pth')
+        if model_path:
+            decoder_path = os.path.join(model_path, 'decoder.pth')
+        else:
+            decoder_path = hf_hub_download(repo_id='ekwek/Soprano-80M', filename='decoder.pth')
         self.decoder.load_state_dict(torch.load(decoder_path, map_location=device))
         self.decoder_batch_size=decoder_batch_size
         self.RECEPTIVE_FIELD = 4 # Decoder receptive field
