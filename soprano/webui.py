@@ -9,6 +9,7 @@ import time
 import gradio as gr
 import numpy as np
 from soprano import SopranoTTS
+from soprano.utils.streaming import play_stream
 
 
 parser = argparse.ArgumentParser(description='Soprano Text-to-Speech Gradio WebUI')
@@ -44,11 +45,31 @@ def generate_speech(
     temperature: float,
     top_p: float,
     repetition_penalty: float,
-) -> tuple:
+    streaming: bool,
+):
     if not text.strip():
-        return None, "Please enter some text to generate speech."
+        yield None, "Please enter some text to generate speech."
+        return
 
     try:
+        if streaming:
+            stream = model.infer_stream(
+                text,
+                temperature=temperature,
+                top_p=top_p,
+                repetition_penalty=repetition_penalty,
+                chunk_size=1,
+            )
+            yield None, "⏳ Streaming..."
+
+            latency = play_stream(stream)
+
+            yield None, (
+                f"✓ Streaming complete | "
+                f"{latency*1000:.2f} ms latency"
+            )
+            return
+
         start_time = time.perf_counter()
 
         audio = model.infer(
@@ -72,10 +93,11 @@ def generate_speech(
             f"({rtf:.2f}x realtime)"
         )
 
-        return (SAMPLE_RATE, audio_int16), status
+        yield (SAMPLE_RATE, audio_int16), status
+        return
 
     except Exception as e:
-        return None, f"✗ Error: {str(e)}"
+        yield None, f"✗ Error: {str(e)}"
 
 
 # Create Gradio interface
@@ -103,6 +125,11 @@ and up to **2000x real-time generation**, all while being easy to deploy at **<1
                 value="Soprano is an extremely lightweight text to speech model designed to produce highly realistic speech at unprecedented speed.",
                 lines=5,
                 max_lines=10,
+            )
+            streaming = gr.Checkbox(
+                label="Stream Audio",
+                value=False,
+                info="Note: This bypasses the Gradio interface and streams audio directly to your speaker."
             )
             with gr.Accordion("Advanced Settings", open=False):
                 temperature = gr.Slider(
@@ -151,7 +178,7 @@ and up to **2000x real-time generation**, all while being easy to deploy at **<1
     )
     generate_btn.click(
         fn=generate_speech,
-        inputs=[text_input, temperature, top_p, repetition_penalty],
+        inputs=[text_input, temperature, top_p, repetition_penalty, streaming],
         outputs=[audio_output, status_output],
     )
     gr.Markdown(

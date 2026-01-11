@@ -1,5 +1,6 @@
 import sounddevice as sd
 import torch
+import time
 
 
 def play_stream(stream, sample_rate=32000):
@@ -12,7 +13,14 @@ def play_stream(stream, sample_rate=32000):
         dtype='float32',
         blocksize=0
     ) as out_stream:
+        start = time.time()
+        latency = None
+        first = True
         for chunk in stream:
+            if first:
+                latency = time.time()-start
+                first = False
+
             if isinstance(chunk, torch.Tensor):
                 chunk = chunk.detach().cpu()
 
@@ -23,3 +31,4 @@ def play_stream(stream, sample_rate=32000):
                 chunk = chunk.transpose(0, 1)
 
             out_stream.write(chunk.numpy())
+    return latency
