@@ -12,7 +12,15 @@ from torch import Tensor
 import torch
 from contextlib import asynccontextmanager
 
-from soprano.tts import SopranoTTS
+# Handle import when running from within the server directory
+try:
+    from soprano.tts import SopranoTTS
+except ImportError:
+    import sys
+    import os
+    # Add the parent directory to the Python path to resolve import issues
+    sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    from soprano.tts import SopranoTTS
 
 
 # Set up logging
@@ -138,6 +146,15 @@ class TTSManager:
 
                     # Use retry mechanism for model loading
                     def load_model():
+                        # Import here in case it's needed in the executor
+                        try:
+                            from soprano.tts import SopranoTTS
+                        except ImportError:
+                            import sys
+                            import os
+                            # Add the parent directory to the Python path to resolve import issues
+                            sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+                            from soprano.tts import SopranoTTS
                         return SopranoTTS(
                             cache_size_mb=100,
                             device=self.device
@@ -351,7 +368,7 @@ if __name__ == "__main__":
     # Start the server
     print("Server starting on http://localhost:8000")
     uvicorn.run(
-        "soprano.server.api:app",
+        app,
         host="localhost",
         port=8000,
         reload=False

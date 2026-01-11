@@ -42,11 +42,14 @@ class SopranoTTS:
         self.decoder = SopranoDecoder()
         if device == 'cuda':
             self.decoder = self.decoder.cuda()
+            map_location = 'cuda'
+        else:
+            map_location = 'cpu'
         if model_path:
             decoder_path = os.path.join(model_path, 'decoder.pth')
         else:
             decoder_path = hf_hub_download(repo_id='ekwek/Soprano-80M', filename='decoder.pth')
-        self.decoder.load_state_dict(torch.load(decoder_path))
+        self.decoder.load_state_dict(torch.load(decoder_path, map_location=map_location))
         self.decoder_batch_size=decoder_batch_size
         self.RECEPTIVE_FIELD = 4 # Decoder receptive field
         self.TOKEN_SIZE = 2048 # Number of samples per audio token

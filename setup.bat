@@ -15,6 +15,17 @@ echo Press any key to continue or Ctrl+C to cancel...
 pause >nul
 
 echo.
+echo Installing required dependencies...
+echo.
+
+REM Install all required packages
+pip install fastapi huggingface_hub lmdeploy numpy scipy unidecode inflect sounddevice uvicorn gradio pyaudio
+
+if %errorlevel% neq 0 (
+    echo Error occurred during dependency installation. Attempting to continue...
+)
+
+echo.
 echo Installing Soprano TTS package...
 echo.
 
@@ -34,8 +45,13 @@ echo.
 REM Uninstall current PyTorch
 pip uninstall -y torch torchvision torchaudio
 
-REM Install PyTorch with CUDA 12.6 support
-pip install torch==2.8.0 torchvision==0.23.0 torchaudio==2.8.0 --index-url https://download.pytorch.org/whl/cu126
+REM Install PyTorch with CUDA 12.8 support
+pip install torch==2.8.0 torchvision==0.23.0 torchaudio==2.8.0 --index-url https://download.pytorch.org/whl/cu128
+
+if %errorlevel% neq 0 (
+    echo Warning: PyTorch CUDA 12.8 installation failed. Installing CUDA 12.6 version...
+    pip install torch==2.8.0 torchvision==0.23.0 torchaudio==2.8.0 --index-url https://download.pytorch.org/whl/cu126
+)
 
 if %errorlevel% neq 0 (
     echo Warning: PyTorch CUDA installation failed. Installing CPU version...
@@ -58,7 +74,7 @@ echo ================================================
 echo Setup completed!
 echo.
 echo To use Soprano TTS:
-echo - Run Soprano.bat to access the main menu
+echo - Run start_soprano.bat to access the main menu
 echo - Or run individual components as needed
 echo ================================================
 

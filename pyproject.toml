@@ -26,7 +26,8 @@ dependencies = [
   "inflect",
   "sounddevice",
   "uvicorn",
-  "gradio"
+  "gradio",
+  "pyaudio"
 ]
 license = {text = "MIT"}
 
@@ -35,9 +36,9 @@ Homepage = "https://github.com/ekwek1/soprano"
 Issues = "https://github.com/ekwek1/soprano/issues"
 
 [project.scripts]
-soprano = "CLI.soprano_cli:main"
+soprano = "soprano.soprano_cli:main"
 soprano-webui = "soprano.webui:main"
 
 [tool.setuptools.packages.find]
 where = ["."]
-include = ["soprano*", "CLI*"]
+include = ["soprano*"]

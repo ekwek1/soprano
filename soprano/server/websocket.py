@@ -9,7 +9,15 @@ from contextlib import asynccontextmanager
 from websockets.exceptions import ConnectionClosedOK, ConnectionClosedError
 from asyncio import Queue, QueueEmpty
 
-from soprano.tts import SopranoTTS
+# Handle import when running from within the server directory
+try:
+    from soprano.tts import SopranoTTS
+except ImportError:
+    import sys
+    import os
+    # Add the parent directory to the Python path to resolve import issues
+    sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    from soprano.tts import SopranoTTS
 
 
 # Set up logging
@@ -56,6 +64,15 @@ class TTSWebSocketManager:
                     loop = asyncio.get_running_loop()  # Use get_running_loop instead of get_event_loop
 
                     def load_model():
+                        # Import here in case it's needed in the executor
+                        try:
+                            from soprano.tts import SopranoTTS
+                        except ImportError:
+                            import sys
+                            import os
+                            # Add the parent directory to the Python path to resolve import issues
+                            sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+                            from soprano.tts import SopranoTTS
                         return SopranoTTS(
                             cache_size_mb=100,
                             device=self.device
@@ -80,6 +97,23 @@ class TTSWebSocketManager:
         Stream audio in real-time from the TTS model with backpressure handling.
         Uses a queue to decouple TTS generation from WebSocket sending.
         """
+        # Check if streaming is supported (only available on GPU with LMDeploy backend)
+        try:
+            tts = self.get_model()
+            # Check if we're using transformers backend which doesn't support streaming
+            from soprano.backends.transformers import TransformersModel
+            if isinstance(tts.pipeline, TransformersModel):
+                # Send error message to client
+                await websocket.send_text(json.dumps({
+                    "type": "error",
+                    "message": "Real-time streaming is not supported on CPU. Only generate speech is supported for CPU."
+                }))
+                logger.warning("Streaming requested but not supported on CPU")
+                return
+        except Exception as e:
+            logger.warning(f"Could not determine backend type: {e}")
+            # Continue with original logic if there's an issue checking the backend
+
         # Create a queue to decouple generation from sending
         audio_queue = Queue(maxsize=10)  # Limit queue size to prevent memory buildup
 
@@ -120,6 +154,20 @@ class TTSWebSocketManager:
 
                 # Put None to signal end of stream
                 await audio_queue.put(None)
+            except NotImplementedError as e:
+                logger.error(f"Streaming not supported: {str(e)}")
+                # Send error message to client
+                try:
+                    await websocket.send_text(json.dumps({
+                        "type": "error",
+                        "message": "Real-time streaming is not supported on CPU. Only generate speech is supported for CPU."
+                    }))
+                except:
+                    pass
+                try:
+                    await audio_queue.put(None)  # Signal error to consumer
+                except:
+                    pass
             except Exception as e:
                 logger.error(f"Error in audio producer: {str(e)}", exc_info=True)
                 try:
@@ -186,11 +234,11 @@ class TTSWebSocketManager:
             await websocket.send_text(json.dumps(metadata))
 
             # Use the backpressure-aware streaming method
+            # This will return early if streaming is not supported
             await self.stream_audio_with_backpressure(websocket, text, min_text_length)
 
-            # Send end signal
-            await websocket.send_text(json.dumps({"type": "end"}))
-            logger.info("Streaming completed successfully")
+            # Only send end signal if streaming was not terminated early due to unsupported backend
+            # The function will return before reaching here if streaming is not supported
 
         except Exception as e:
             logger.error(f"Error during streaming: {str(e)}", exc_info=True)
@@ -331,7 +379,7 @@ if __name__ == "__main__":
     # Start the server
     print("WebSocket server starting on ws://localhost:8001/ws/tts")
     uvicorn.run(
-        "soprano.server.websocket:app",
+        app,
         host="localhost",
         port=8001,  # Using port 8001 to avoid conflict with the regular API
         reload=False
