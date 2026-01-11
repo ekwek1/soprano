@@ -21,13 +21,13 @@ class SopranoTTS:
             - 'lmdeploy': Force use of LMDeploy (fastest, CUDA only)
             - 'transformers': Force use of HuggingFace Transformers (slower, all devices)
             Can be overridden with SOPRANO_BACKEND environment variable.
-        device: Device to run inference on ('cuda', 'cpu', 'mps')
+        device: Device to run inference on ('auto', 'cuda', 'cpu', 'mps')
         cache_size_mb: Cache size in MB for lmdeploy backend
         decoder_batch_size: Batch size for decoder
     """
     def __init__(self,
             backend='auto',
-            device='cuda',
+            device='auto',
             cache_size_mb=100,
             decoder_batch_size=1,
             model_path=None):

@@ -14,7 +14,7 @@ def main():
     parser.add_argument('--model-path', '-m',
                         help='Path to local model directory (optional)')
     parser.add_argument('--device', '-d', default='auto',
-                        choices=['auto', 'cuda', 'cpu'],
+                        choices=['auto', 'cuda', 'cpu', 'mps'],
                         help='Device to use for inference')
     parser.add_argument('--backend', '-b', default='auto',
                         choices=['auto', 'transformers', 'lmdeploy'],
