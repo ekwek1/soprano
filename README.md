@@ -134,7 +134,7 @@ Each sentence is generated independently, enabling **effectively infinite genera
 ## Quick Start
 
 ### Using the Launcher
-Run `Soprano.bat` to access the main menu with options to launch any component.
+Run `start_soprano.bat` to access the main menu with options to launch any component.
 
 ### API Server
 Start the API server and send requests to `http://localhost:8000/v1/audio/speech`
