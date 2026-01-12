@@ -10,13 +10,13 @@ Soprano is an ultra-realistic Text-to-Speech system that provides both REST API 
 
 - **High Quality Audio**: Generates ultra-realistic speech using advanced TTS models
 - **Multiple Interfaces**: REST API and WebSocket streaming options
-- **OpenAI Compatible**: Follows OpenAI's speech endpoint format
+- **OpenAI Compatible**: Follows OpenAI's speech endpoint format for easy integration
 - **Real-time Streaming**: WebSocket support for real-time audio streaming
 - **Configurable Parameters**: Supports temperature, top_p, repetition_penalty, and min_text_length controls
 
 ## Components
 
-- **API Server**: RESTful API with OpenAI-compatible endpoints
+- **API Server**: RESTful API with OpenAI-compatible endpoints for workflow integration
 - **WebSocket Server**: Real-time audio streaming via WebSocket
 - **CLI Interface**: Interactive command-line interface
 - **Test Clients**: Dedicated test clients for both API and WebSocket
