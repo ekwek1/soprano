@@ -6,7 +6,7 @@ Here is the updated, professional `README.md` file. I have removed all emojis, i
 
 Soprano is an ultra-realistic Text-to-Speech system that provides REST API, WebSocket streaming capabilities, and a user-friendly Web UI. It is designed to be lightweight yet high-fidelity, offering OpenAI-compatible endpoints for seamless integration into existing workflows.
 
-> **Note:** Soprano uses **LMDeploy** to accelerate inference by default. If LMDeploy cannot be installed in your environment, Soprano can fall back to the HuggingFace **transformers** backend (with slower performance). To enable this, pass `backend='transformers'` when creating the TTS model.
+> **Note:** Soprano uses **LMDeploy** to accelerate inference by default. If LMDeploy cannot be installed in your environment, Soprano can fall back to the HuggingFace **transformers** backend (with slower performance). To enable this, pass `backend='transformers'` when creating the TTS model
 
 ## Features
 
