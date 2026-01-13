@@ -1,5 +1,6 @@
 from .vocos.decoder import SopranoDecoder
-from .utils.text import clean_text
+from .utils.text_normalizer import clean_text
+from .utils.text_splitter import split_and_recombine_text
 from .utils.auto_select import select_device, select_backend
 import torch
 import re
@@ -63,7 +64,7 @@ class SopranoTTS:
         for text_idx, text in enumerate(texts):
             text = text.strip()
             cleaned_text = clean_text(text)
-            sentences = re.split(r"(?<=[.!?])\s+", cleaned_text)
+            sentences = split_and_recombine_text(cleaned_text)
             processed = []
             for sentence in sentences:
                 processed.append({
