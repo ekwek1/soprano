@@ -9,6 +9,9 @@
   <img width="640" height="320" alt="soprano-github" src="https://github.com/user-attachments/assets/4d612eac-23b8-44e6-8c59-d7ac14ebafd1" />
 </div>
 
+### 📰 News
+**2025.12.22 - Soprano-80M released! [Model](https://huggingface.co/ekwek/Soprano-80M) | [Demo](https://huggingface.co/spaces/ekwek/Soprano-TTS)**
+
 ---
 
 ## Overview
