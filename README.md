@@ -1,16 +1,17 @@
-<!-- Version 0.0.2 -->
+<!-- Version 0.1.0 -->
 <div align="center">
   
   # Soprano: Instant, Ultra‑Realistic Text‑to‑Speech
 
-  [![Alt Text](https://img.shields.io/badge/HuggingFace-Model-orange?logo=huggingface)](https://huggingface.co/ekwek/Soprano-80M)
+  [![Alt Text](https://img.shields.io/badge/HuggingFace-Model-orange?logo=huggingface)](https://huggingface.co/ekwek/Soprano-1.1-80M)
   [![Alt Text](https://img.shields.io/badge/HuggingFace-Demo-yellow?logo=huggingface)](https://huggingface.co/spaces/ekwek/Soprano-TTS)
   
   <img width="640" height="320" alt="soprano-github" src="https://github.com/user-attachments/assets/4d612eac-23b8-44e6-8c59-d7ac14ebafd1" />
 </div>
 
 ### 📰 News
-**2026.01.13 - [Soprano-Factory](https://github.com/ekwek1/soprano-factory) released! You can now train/fine-tune your own Soprano models.**  
+**2026.01.14 - [Soprano-1.1-80M](https://huggingface.co/ekwek/Soprano-1.1-80M) released! 95% fewer hallucinations and a 63% preference rate over Soprano-80M.**  
+2026.01.13 - [Soprano-Factory](https://github.com/ekwek1/soprano-factory) released! You can now train/fine-tune your own Soprano models.  
 2025.12.22 - Soprano-80M released! [Model](https://huggingface.co/ekwek/Soprano-80M) | [Demo](https://huggingface.co/spaces/ekwek/Soprano-TTS)
 
 ---
@@ -43,7 +44,13 @@ https://github.com/user-attachments/assets/525cf529-e79e-4368-809f-6be620852826
 
 ## Installation
 
-### Install with wheel (CUDA-only for now)
+### Install with wheel (CUDA)
+
+```bash
+pip install soprano-tts[lmdeploy]
+```
+
+### Install with wheel (CPU/MPS)
 
 ```bash
 pip install soprano-tts
@@ -172,7 +179,7 @@ play_stream(stream) # plays audio with <15 ms latency!
 
 ## Usage tips:
 
-* Soprano works best when each sentence is between 2 and 15 seconds long.
+* Soprano works best when each sentence is between 2 and 30 seconds long.
 * Although Soprano recognizes numbers and some special characters, it occasionally mispronounces them. Best results can be achieved by converting these into their phonetic form. (1+1 -> one plus one, etc)
 * If Soprano produces unsatisfactory results, you can easily regenerate it for a new, potentially better generation. You may also change the sampling settings for more varied results.
 * Avoid improper grammar such as not using contractions, multiple spaces, etc.

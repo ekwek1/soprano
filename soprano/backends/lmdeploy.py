@@ -14,7 +14,7 @@ class LMDeployModel(BaseModel):
         backend_config = TurbomindEngineConfig(cache_max_entry_count=cache_size_ratio)
         
         # Use local model if path provided, otherwise use HuggingFace
-        model_name_or_path = model_path if model_path else 'ekwek/Soprano-80M'
+        model_name_or_path = model_path if model_path else 'ekwek/Soprano-1.1-80M'
         
         self.pipeline = pipeline(model_name_or_path,
             log_level='ERROR',

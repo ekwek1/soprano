@@ -9,7 +9,7 @@ class SopranoDecoder(nn.Module):
     def __init__(self,
                  num_input_channels=512,
                  decoder_num_layers=8,
-                 decoder_dim=512,
+                 decoder_dim=768,
                  decoder_intermediate_dim=None,
                  hop_length=512,
                  n_fft=2048,
@@ -30,7 +30,7 @@ class SopranoDecoder(nn.Module):
                                       dim=self.dim,
                                       intermediate_dim=self.intermediate_dim,
                                       num_layers=self.num_layers,
-                                      input_kernel_size=dw_kernel,
+                                      input_kernel_size=1,#dw_kernel,
                                       dw_kernel_size=dw_kernel,
                                       )
         self.head = ISTFTHead(dim=self.dim,

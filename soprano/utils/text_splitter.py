@@ -4,7 +4,7 @@ Copied from https://github.com/neonbjb/tortoise-tts/blob/main/tortoise/utils/tex
 import re
 
 
-def split_and_recombine_text(text, desired_length=30, max_length=300):
+def split_and_recombine_text(text, desired_length=1, max_length=300):
     """Split text it into chunks of a desired length trying to keep sentences intact."""
     # normalize text, remove redundant whitespace and convert non-ascii quotes to ascii
     text = re.sub(r'\n\n+', '\n', text)

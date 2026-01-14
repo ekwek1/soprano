@@ -115,7 +115,7 @@ with gr.Blocks(title="Soprano TTS") as demo:
 
 **Device:** {device.upper()} | **Backend:** {backend}
 
-**Model Weights:** https://huggingface.co/ekwek/Soprano-80M  
+**Model Weights:** https://huggingface.co/ekwek/Soprano-1.1-80M  
 **Model Demo:** https://huggingface.co/spaces/ekwek/Soprano-TTS  
 **GitHub:** https://github.com/ekwek1/soprano  
 """
@@ -136,9 +136,9 @@ with gr.Blocks(title="Soprano TTS") as demo:
             )
             with gr.Accordion("Advanced Settings", open=False):
                 temperature = gr.Slider(
-                    minimum=0.1,
-                    maximum=1.5,
-                    value=0.3,
+                    minimum=0.0,
+                    maximum=1.0,
+                    value=0.0,
                     step=0.05,
                     label="Temperature",
                 )
@@ -179,10 +179,10 @@ with gr.Blocks(title="Soprano TTS") as demo:
             )
     gr.Examples(
         examples=[
-            ["Soprano is an extremely lightweight text to speech model.", 0.3, 0.95, 1.2],
-            ["Artificial intelligence is transforming the world.", 0.5, 0.90, 1.2],
-            ["I'm so excited, I can't even wait!", 0.3, 0.95, 1.2],
-            ["Why don't you go ahead and try it?", 0.3, 0.95, 1.2],
+            ["Soprano is an extremely lightweight text to speech model.", 0.0, 0.95, 1.2],
+            ["Artificial intelligence is transforming the world.", 0.0, 0.95, 1.2],
+            ["I'm so excited, I can't even wait!", 0.0, 0.95, 1.2],
+            ["Why don't you go ahead and try it?", 0.0, 0.95, 1.2],
         ],
         inputs=[text_input, temperature, top_p, repetition_penalty],
         label="Example Prompts",
@@ -196,7 +196,7 @@ with gr.Blocks(title="Soprano TTS") as demo:
         f"""
 ### Usage tips:
 
-- Soprano works best when each sentence is between 2 and 15 seconds long.
+- Soprano works best when each sentence is between 2 and 30 seconds long.
 - Although Soprano recognizes numbers and some special characters, it occasionally mispronounces them.
 Best results can be achieved by converting these into their phonetic form.
 (1+1 -> one plus one, etc)

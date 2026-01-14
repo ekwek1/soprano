@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "soprano-tts"
-version = "0.0.2"
+version = "0.1.0"
 authors = [
   { name="ekwek1", email="eugene.kwek.1@gmail.com" },
 ]

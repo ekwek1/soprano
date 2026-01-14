@@ -12,7 +12,7 @@ class TransformersModel(BaseModel):
         self.device = device
         
         # Use local model if path provided, otherwise use HuggingFace
-        model_name_or_path = model_path if model_path else 'ekwek/Soprano-80M'
+        model_name_or_path = model_path if model_path else 'ekwek/Soprano-1.1-80M'
         
         self.model = AutoModelForCausalLM.from_pretrained(
             model_name_or_path,

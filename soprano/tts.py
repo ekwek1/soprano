@@ -47,7 +47,7 @@ class SopranoTTS:
         if model_path:
             decoder_path = os.path.join(model_path, 'decoder.pth')
         else:
-            decoder_path = hf_hub_download(repo_id='ekwek/Soprano-80M', filename='decoder.pth')
+            decoder_path = hf_hub_download(repo_id='ekwek/Soprano-1.1-80M', filename='decoder.pth')
         self.decoder.load_state_dict(torch.load(decoder_path, map_location=device))
         self.decoder_batch_size=decoder_batch_size
         self.RECEPTIVE_FIELD = 4 # Decoder receptive field
@@ -96,7 +96,7 @@ class SopranoTTS:
             text,
             out_path=None,
             top_p=0.95,
-            temperature=0.3,
+            temperature=0.0,
             repetition_penalty=1.2):
         results = self.infer_batch([text],
             top_p=top_p,
@@ -111,7 +111,7 @@ class SopranoTTS:
             texts,
             out_dir=None,
             top_p=0.95,
-            temperature=0.3,
+            temperature=0.0,
             repetition_penalty=1.2):
         sentence_data = self._preprocess_text(texts)
         prompts = list(map(lambda x: x[0], sentence_data))
@@ -162,7 +162,7 @@ class SopranoTTS:
             text,
             chunk_size=1,
             top_p=0.95,
-            temperature=0.3,
+            temperature=0.0,
             repetition_penalty=1.2):
         start_time = time.time()
         sentence_data = self._preprocess_text([text])

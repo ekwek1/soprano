@@ -99,10 +99,10 @@ def _expand_num_prefix(m):
 
 def _expand_num_suffix(m):
     match = m.group(0)
-    if match[1].upper() == 'K': return f"{match[0]} thousand"
-    elif match[1].upper() == 'M': return f"{match[0]} million"
-    elif match[1].upper() == 'B': return f"{match[0]} billion"
-    elif match[1].upper() == 'T': return f"{match[0]} trillion"
+    if match[-1].upper() == 'K': return f"{match[:-1]} thousand"
+    elif match[-1].upper() == 'M': return f"{match[:-1]} million"
+    elif match[-1].upper() == 'B': return f"{match[:-1]} billion"
+    elif match[-1].upper() == 'T': return f"{match[:-1]} trillion"
     return match # unexpected format
 
 def _split_alphanumeric(m):
@@ -230,6 +230,9 @@ def normalize_numbers(text):
 ####################################################################################################
 # Special characters & other patterns
 
+_preunicode_special_characters = [(re.compile(x[0]), x[1]) for x in [
+    ('—', ' - '),
+]]
 _special_characters = [(re.compile(x[0]), x[1]) for x in [
     ('@', ' at '),
     ('&', ' and '),
@@ -253,6 +256,11 @@ _link_header_re = re.compile(r'(https?://)')
 _dash_re = re.compile(r'(. - .)')
 _dot_re = re.compile(r'([A-Z]\.[A-Z])', re.IGNORECASE)
 _parentheses_re = re.compile(r'[\(\[\{].*[\)\]\}](.|$)')
+
+def expand_preunicode_special_characters(text):
+    for regex, replacement in _preunicode_special_characters:
+        text = re.sub(regex, replacement, text)
+    return text
 
 def expand_special_characters(text):
     for regex, replacement in _special_characters:
@@ -322,6 +330,7 @@ def dedup_punctuation(text):
     return text
 
 def clean_text(text):
+    text = expand_preunicode_special_characters(text)
     text = convert_to_ascii(text)
     text = normalize_newlines(text)
     text = normalize_numbers(text)
