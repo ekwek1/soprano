@@ -27,6 +27,8 @@ class TransformersModel(BaseModel):
             top_p=0.95,
             temperature=0.3,
             repetition_penalty=1.2):
+        if temperature <= 0.0:
+            temperature = 0.001 # temp must be nonzero
         inputs = self.tokenizer(
             prompts,
             return_tensors='pt',
@@ -70,7 +72,9 @@ class TransformersModel(BaseModel):
             top_p=0.95,
             temperature=0.3,
             repetition_penalty=1.2):
-        
+        if temperature <= 0.0:
+            temperature = 0.001 # temp must be nonzero
+
         # Tokenize input
         inputs = self.tokenizer(prompt, return_tensors='pt').to(self.device)
         input_ids = inputs['input_ids']
