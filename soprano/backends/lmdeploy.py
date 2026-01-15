@@ -117,13 +117,7 @@ class LMDeployModel(BaseModel):
                         # Precise alignment logic
                         hidden_state = stacked[i]
                         num_gen = response.generate_token_len
-                        
-                        # We need the hidden state that PRODUCED the token.
-                        # Index 0 (Prefill end) -> Produces Token 0
-                        # ...
-                        # Index N-1 (Gen N-1) -> Produces Token N (EOS)
-                        # Index N (Gen N/EOS) -> Unused/Garbage
-                        
+
                         if hidden_state.size(0) >= num_gen:
                             # Take first num_gen states (0 to N-1)
                             hidden_state = hidden_state[:num_gen, :]
@@ -169,29 +163,10 @@ class LMDeployModel(BaseModel):
                 num_generated = len(all_tokens)
                 
                 if num_generated > yielded_token_count:
-                    # Calculate offset: verify we have enough captured states
-                    # The hook captures everything, including prompt processing. 
-                    # We align from the END of the capture buffer.
-                    
                     total_captured = len(self.captured_hidden_states)
-                    
-                    # Ensure we don't index past what we have
-                    # We want the index corresponding to the newly generated token
-                    # If we generated N tokens total, we want the Nth from last captured state?
-                    # No, captured states accrue sequentially.
-                    # Prompt processing might add M items. Generation adds 1 item per step.
-                    # So index M + (num_generated - 1) is current token.
-                    
-                    # A robust way is to assume strict 1:1 mapping for generated tokens at the END of the list.
-                    # The last state captured corresponds to the last token generated.
-                    # The (last - 1) state corresponds to (last - 1) token.
-                    
                     new_tokens_count = num_generated - yielded_token_count
                     
                     for k in range(new_tokens_count):
-                        # We want the token at 'yielded_token_count + k' (0-indexed relative to gen)
-                        # Captured Index 0 corresponds to Gen Token 0.
-                        
                         idx_in_gen = yielded_token_count + k
                         # Direct mapping:
                         idx_in_capture = idx_in_gen
