@@ -1,206 +1,219 @@
-<!-- Version 0.0.2 -->
+<!-- Version 0.1.0 -->
 <div align="center">
   
-  # Soprano: Instant, Ultra‑Realistic Text‑to‑Speech 
+  # Soprano: Instant, Ultra‑Realistic Text‑to‑Speech
 
-  [![Alt Text](https://img.shields.io/badge/HuggingFace-Model-orange?logo=huggingface)](https://huggingface.co/ekwek/Soprano-80M)
+  [![Alt Text](https://img.shields.io/badge/HuggingFace-Model-orange?logo=huggingface)](https://huggingface.co/ekwek/Soprano-1.1-80M)
   [![Alt Text](https://img.shields.io/badge/HuggingFace-Demo-yellow?logo=huggingface)](https://huggingface.co/spaces/ekwek/Soprano-TTS)
+  
+  <img width="640" height="320" alt="soprano-github" src="https://github.com/user-attachments/assets/4d612eac-23b8-44e6-8c59-d7ac14ebafd1" />
 </div>
 
-https://github.com/user-attachments/assets/525cf529-e79e-4368-809f-6be620852826
+### 📰 News
+**2026.01.14 - [Soprano-1.1-80M](https://huggingface.co/ekwek/Soprano-1.1-80M) released! 95% fewer hallucinations and a 63% preference rate over Soprano-80M.**  
+2026.01.13 - [Soprano-Factory](https://github.com/ekwek1/soprano-factory) released! You can now train/fine-tune your own Soprano models.  
+2025.12.22 - Soprano-80M released! [Model](https://huggingface.co/ekwek/Soprano-80M) | [Demo](https://huggingface.co/spaces/ekwek/Soprano-TTS)
 
 ---
 
 ## Overview
 
-**Soprano** is an ultra‑lightweight, open‑source text‑to‑speech (TTS) model designed for real‑time, high‑fidelity speech synthesis at unprecedented speed, all while remaining compact and easy to deploy at **under 1 GB VRAM usage**.
+**Soprano** is an ultra‑lightweight, on-device text‑to‑speech (TTS) model designed for expressive, high‑fidelity speech synthesis at unprecedented speed. Soprano was designed with the following features:
+- Up to **20x** real-time generation on CPU and **2000x** real-time on GPU
+- **Lossless streaming** with **<250 ms** latency on CPU, **<15 ms** on GPU
+- **<1 GB** memory usage with a compact 80M parameter architecture
+- **Infinite generation length** with automatic text splitting
+- Highly expressive, crystal clear audio generation at **32kHz**
+- Widespread support for CUDA, ROCm, CPU, and MPS devices on Windows, Linux, and Mac
+- Supports OpenAI-compatible endpoint, ONNX, WebUI, CLI, and ComfyUI for easy and production-ready inference
 
-With only **80M parameters**, Soprano achieves a real‑time factor (RTF) of **~2000×**, capable of generating **10 hours of audio in under 20 seconds**. Soprano uses a **seamless streaming** technique that enables true real‑time synthesis in **<15 ms**, multiple orders of magnitude faster than existing TTS pipelines.
+https://github.com/user-attachments/assets/525cf529-e79e-4368-809f-6be620852826
 
 ---
+
+## Table of Contents
+
+- [Installation](#installation)
+- [Usage](#usage)
+  - [WebUI](#webui)
+  - [CLI](#cli)
+  - [OpenAI-compatible endpoint](#openai-compatible-endpoint)
+  - [Python script](#python-script)
+- [Usage tips](#usage-tips)
+- [Roadmap](#roadmap)
 
 ## Installation
 
-**Requirements**: Linux or Windows, Python >= 3.10, CUDA or ROCm enabled GPU
-
-Soprano supports multiple PyTorch variants depending on your hardware:
-
-#### CUDA (NVIDIA GPUs)
-```bash
-pip install -e .[cuda]
-# or if you use uv:
-uv pip install -e .[cuda]
-```
-
-#### ROCm (AMD GPUs)
-```bash
-pip install -e .[rocm]
-# or if you use uv:
-uv pip install -e .[rocm]
-
-# Install lmdeploy for ROCm (recommended for best performance)
-LMDEPLOY_TARGET_DEVICE=rocm pip install git+https://github.com/InternLM/lmdeploy.git
-# or with uv:
-LMDEPLOY_TARGET_DEVICE=rocm uv pip install git+https://github.com/InternLM/lmdeploy.git
-```
-
-#### ROCm Nightly (AMD GPUs)
-For users who want the latest PyTorch nightly builds with ROCm 7.1 support:
-```bash
-pip install -e .[rocm-nightly]
-# or if you use uv:
-uv pip install -e .[rocm-nightly]
-
-# Install lmdeploy for ROCm (recommended for best performance)
-LMDEPLOY_TARGET_DEVICE=rocm pip install git+https://github.com/InternLM/lmdeploy.git
-# or with uv:
-LMDEPLOY_TARGET_DEVICE=rocm uv pip install git+https://github.com/InternLM/lmdeploy.git
-```
-
-> **Note**:
-> - **ROCm users**: You may need to set the `HSA_OVERRIDE_GFX_VERSION` environment variable to match your GPU architecture, for example:
->   ```bash
->   export HSA_OVERRIDE_GFX_VERSION=11.0.0
->   ```
-> - **ROCm backends**: Both `lmdeploy` and `transformers` backends are fully supported on ROCm:
->   - `lmdeploy` (default with `backend='auto'`): Faster inference, recommended for production
->   - `transformers`: Alternative backend, useful for debugging or compatibility
-> - **ROCm Triton compatibility**: Torch compilation must be disabled on ROCm. Set this before running:
->   ```bash
->   export TORCH_COMPILE_DISABLE=1
->   ```
->   This resolves compatibility issues between pytorch-triton-rocm and PyTorch's inductor backend.
-
----
-
-## Web Interface (Gradio)
-
-For a simple web interface, you can use the included Gradio app:
+### Install with wheel (CUDA)
 
 ```bash
-# Install Gradio 6.2.0
-pip install gradio==6.2.0
-# or if you use uv:
-uv pip install gradio==6.2.0
-
-# ROCm users: set environment variables before running
-# export HSA_OVERRIDE_GFX_VERSION=11.0.0
-# export TORCH_COMPILE_DISABLE=1
-# Run the web interface (accessible at 0.0.0.0:7860)
-python gradio_app.py
+pip install soprano-tts[lmdeploy]
 ```
 
-Then open your browser at `http://localhost:7860` (or `http://<your-server-ip>:7860` if running on a remote server)
+### Install with wheel (CPU/MPS)
 
-The Gradio interface provides:
-- Text input with advanced sampling controls (temperature, top_p, repetition penalty)
-- Real-time audio generation and playback
-- Example prompts to get started
-- Simple, user-friendly interface
+```bash
+pip install soprano-tts
+```
+
+To get the latest features, you can install from source instead.
+
+### Install from source (CUDA)
+
+```bash
+git clone https://github.com/ekwek1/soprano.git
+cd soprano
+pip install -e .[lmdeploy]
+```
+
+### Install from source (ROCm)
+
+```bash
+export HSA_OVERRIDE_GFX_VERSION=11.0.0 # Set the variable value appropriate for your graphics card.
+export export TORCH_COMPILE_DISABLE=1
+
+git clone https://github.com/ekwek1/soprano.git
+cd soprano
+pip install datasets prometheus_client
+pip install torch torchaudio pytorch-triton-rocm --index-url https://download.pytorch.org/whl/nightly/rocm7.1
+# or if you prefer older but stable version
+pip install torch torchaudio pytorch-triton-rocm --index-url https://download.pytorch.org/whl/rocm6.4
+
+pip install -e .
+
+# if you want to use LMDeploy
+LMDEPLOY_TARGET_DEVICE=rocm pip install git+https://github.com/InternLM/lmdeploy.git@0e335e0dcf449cb462ecc1b1fab0cc442485e47e
+```
+
+### Install from source (CPU/MPS)
+
+```bash
+git clone https://github.com/ekwek1/soprano.git
+cd soprano
+pip install -e .
+```
+
+> ### ⚠️ Warning: Windows CUDA users
+> 
+> On Windows with CUDA, `pip` will install a CPU-only PyTorch build. To ensure CUDA support works as expected, reinstall PyTorch explicitly with the correct CUDA wheel **after** installing Soprano:
+> 
+> ```bash
+> pip uninstall -y torch
+> pip install torch==2.8.0 --index-url https://download.pytorch.org/whl/cu128
+> ```
 
 ---
 
 ## Usage
 
+### WebUI
+
+Start WebUI:
+
+```bash
+soprano-webui # hosted on http://127.0.0.1:7860 by default
+```
+> **Tip:** You can increase cache size and decoder batch size to increase inference speed at the cost of higher memory usage. For example:
+> ```bash
+> soprano-webui --cache-size 1000 --decoder-batch-size 4
+> ```
+
+### CLI
+
+```
+soprano "Soprano is an extremely lightweight text to speech model."
+
+optional arguments:
+  --output, -o                  Output audio file path (non-streaming only). Defaults to 'output.wav'
+  --model-path, -m              Path to local model directory (optional)
+  --device, -d                  Device to use for inference. Supported: auto, cuda, cpu, mps. Defaults to 'auto'
+  --backend, -b                 Backend to use for inference. Supported: auto, transformers, lmdeploy. Defaults to 'auto'
+  --cache-size, -c              Cache size in MB (for lmdeploy backend). Defaults to 100
+  --decoder-batch-size, -bs     Decoder batch size. Defaults to 1
+  --streaming, -s               Enable streaming playback to speakers
+```
+> **Tip:** You can increase cache size and decoder batch size to increase inference speed at the cost of higher memory usage.
+
+> **Note:** The CLI will reload the model every time it is called. As a result, inference speed will be slower than other methods.
+
+### OpenAI-compatible endpoint
+
+Start server:
+
+```bash
+uvicorn soprano.server:app --host 0.0.0.0 --port 8000
+```
+
+Use the endpoint like this:
+
+```bash
+curl http://localhost:8000/v1/audio/speech \
+  -H "Content-Type: application/json" \
+  -d '{
+    "input": "Soprano is an extremely lightweight text to speech model."
+  }' \
+  --output speech.wav
+```
+
+> **Note:** Currently, this endpoint only supports nonstreaming output.
+
+### Python script
+
 ```python
 from soprano import SopranoTTS
 
-# CUDA (NVIDIA) and ROCm (AMD)
-model = SopranoTTS(backend='auto', device='cuda', cache_size_mb=10, decoder_batch_size=1)
-
-# Or explicitly specify backend
-model = SopranoTTS(backend='lmdeploy', device='cuda', cache_size_mb=10, decoder_batch_size=1)  # Faster
-model = SopranoTTS(backend='transformers', device='cuda', cache_size_mb=10, decoder_batch_size=1)  # Alternative
+model = SopranoTTS(backend='auto', device='auto', cache_size_mb=100, decoder_batch_size=1)
 ```
 
-> **Tip**: You can increase cache_size_mb and decoder_batch_size to increase inference speed at the cost of higher memory usage.
-
-### Basic inference
+> **Tip:** You can increase cache_size_mb and decoder_batch_size to increase inference speed at the cost of higher memory usage.
 
 ```python
+# Basic inference
 out = model.infer("Soprano is an extremely lightweight text to speech model.") # can achieve 2000x real-time with sufficiently long input!
-```
 
-### Save output to a file
-
-```python
+# Save output to a file
 out = model.infer("Soprano is an extremely lightweight text to speech model.", "out.wav")
-```
 
-### Custom sampling parameters
-
-```python
+# Custom sampling parameters
 out = model.infer(
     "Soprano is an extremely lightweight text to speech model.",
     temperature=0.3,
     top_p=0.95,
     repetition_penalty=1.2,
 )
-```
 
-### Batched inference
 
-```python
+# Batched inference
 out = model.infer_batch(["Soprano is an extremely lightweight text to speech model."] * 10) # can achieve 2000x real-time with sufficiently large input size!
-```
 
-#### Save batch outputs to a directory
-
-```python
+# Save batch outputs to a directory
 out = model.infer_batch(["Soprano is an extremely lightweight text to speech model."] * 10, "/dir")
-```
 
-### Streaming inference
 
-```python
-import torch
-
+# Streaming inference
+from soprano.utils.streaming import play_stream
 stream = model.infer_stream("Soprano is an extremely lightweight text to speech model.", chunk_size=1)
-
-# Audio chunks can be accessed via an iterator
-chunks = []
-for chunk in stream:
-    chunks.append(chunk) # first chunk arrives in <15 ms!
-
-out = torch.cat(chunks)
+play_stream(stream) # plays audio with <15 ms latency!
 ```
+
+### 3rd-party tools
+
+#### ONNX
+
+https://github.com/KevinAHM/soprano-web-onnx
+
+#### ComfyUI Nodes
+
+https://github.com/jo-nike/ComfyUI-SopranoTTS
+
+https://github.com/SanDiegoDude/ComfyUI-Soprano-TTS
 
 ## Usage tips:
 
-* Soprano works best when each sentence is between 2 and 15 seconds long.
+* When quoting, use double quotes instead of single quotes.
+* Soprano works best when each sentence is between 2 and 30 seconds long.
 * Although Soprano recognizes numbers and some special characters, it occasionally mispronounces them. Best results can be achieved by converting these into their phonetic form. (1+1 -> one plus one, etc)
 * If Soprano produces unsatisfactory results, you can easily regenerate it for a new, potentially better generation. You may also change the sampling settings for more varied results.
-* Avoid improper grammar such as not using contractions, multiple spaces, etc.
-
----
-
-## Key Features
-
-### 1. High‑fidelity 32 kHz audio
-
-Soprano synthesizes speech at **32 kHz**, delivering quality that is perceptually indistinguishable from 44.1/48 kHz audio and significantly sharper and clearer than the 24 kHz output used by many existing TTS models.
-
-### 2. Vocoder‑based neural decoder
-
-Instead of slow diffusion decoders, Soprano uses a **vocoder‑based decoder** with a Vocos architecture, enabling **orders‑of‑magnitude faster** waveform generation while maintaining comparable perceptual quality.
-
-### 3. Seamless Streaming
-
-Soprano leverages the decoder’s finite receptive field to losslessly stream audio with ultra‑low latency. The streamed output is acoustically identical to offline synthesis, and streaming can begin after generating just 5 audio tokens, enabling **<15 ms latency**.
-
-### 4. State‑of‑the‑art neural audio codec
-
-Speech is represented using a **neural codec** that compresses audio to **~15 tokens/sec** at just **0.2 kbps**, allowing extremely fast generation and efficient memory usage without sacrificing quality.
-
-### 5. Sentence‑level streaming for infinite context
-
-Each sentence is generated independently, enabling **effectively infinite generation length** while maintaining stability and real‑time performance for long‑form generation.
-
----
-
-## Limitations
-
-I’m a second-year undergrad who’s just started working on TTS models, so I wanted to start small. Soprano was only pretrained on 1000 hours of audio (~100x less than other TTS models), so its stability and quality will improve tremendously as I train it on more data. Also, I optimized Soprano purely for speed, which is why it lacks bells and whistles like voice cloning, style control, and multilingual support. Now that I have experience creating TTS models, I have a lot of ideas for how to make Soprano even better in the future, so stay tuned for those!
 
 ---
 
@@ -209,12 +222,19 @@ I’m a second-year undergrad who’s just started working on TTS models, so I w
 * [x] Add model and inference code
 * [x] Seamless streaming
 * [x] Batched inference
-* [ ] Command-line interface (CLI)
-* [ ] Server / API inference
+* [x] Command-line interface (CLI)
+* [x] CPU support
+* [x] Server / API inference
+* [ ] ROCm support (see [#29](/../../issues/29))
 * [ ] Additional LLM backends
-* [ ] CPU support
 * [ ] Voice cloning
 * [ ] Multilingual support
+
+---
+
+## Limitations
+
+Soprano is currently English-only and does not support voice cloning. In addition, Soprano was trained on only 1,000 hours of audio (~100x less than other TTS models), so mispronunciation of uncommon words may occur. This is expected to diminish as Soprano is trained on more data.
 
 ---
 

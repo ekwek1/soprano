@@ -1,9 +1,5 @@
 import os
 import torch
-
-# Disable torch compilation for ROCm compatibility
-os.environ.setdefault('TORCH_COMPILE_DISABLE', '1')
-
 from lmdeploy import pipeline, TurbomindEngineConfig, PytorchEngineConfig, GenerationConfig
 from .base import BaseModel
 
@@ -12,78 +8,95 @@ class LMDeployModel(BaseModel):
     def __init__(self,
             device='cuda',
             cache_size_mb=100,
+            model_path=None,
             **kwargs):
         assert device == 'cuda', "lmdeploy only supports cuda devices, consider changing device or using a different backend instead."
-        cache_size_ratio = cache_size_mb * 1024**2 / torch.cuda.get_device_properties('cuda').total_memory
-
-        # Detect if we're on ROCm (AMD GPU)
-        is_rocm = 'Radeon' in torch.cuda.get_device_name(0) or 'AMD' in torch.cuda.get_device_name(0)
-        self.is_rocm = is_rocm
+        
+        # Calculate cache size
+        try:
+            total_mem = torch.cuda.get_device_properties('cuda').total_memory
+            cache_size_ratio = cache_size_mb * 1024**2 / total_mem
+        except:
+            cache_size_ratio = 0.01  # Fallback
+            
+        # Detect ROCm (AMD GPU)
+        self.is_rocm = False
+        try:
+            dev_name = torch.cuda.get_device_name(0)
+            if 'Radeon' in dev_name or 'AMD' in dev_name:
+                self.is_rocm = True
+        except:
+            pass
+            
         self.captured_hidden_states = []
+        
+        pipeline_kwargs = {}
 
-        if is_rocm:
-            # Use PytorchEngine for ROCm with compilation disabled
-            # Disable CUDA graphs so hooks work during generation
+        if self.is_rocm:
+            print("Using PytorchEngine for ROCm")
+            # ROCm/AMD specific config
             backend_config = PytorchEngineConfig(
                 cache_max_entry_count=cache_size_ratio,
                 enable_prefix_caching=False,
-                eager_mode=True  # Disable CUDA graphs to allow hooks during generation
+                eager_mode=True
             )
+            
+            # Use bfloat16 if supported (now backed by fixed library check)
+            if torch.cuda.is_bf16_supported():
+                print("Enabling bfloat16 support (ROCm)")
+                pipeline_kwargs['dtype'] = 'bfloat16'
         else:
-            # Use TurbomindEngine for CUDA
+            # Standard Turbomind for NVIDIA
             backend_config = TurbomindEngineConfig(cache_max_entry_count=cache_size_ratio)
-
-        self.pipeline = pipeline('ekwek/Soprano-80M',
+        
+        # Use local model if path provided, otherwise use HuggingFace
+        model_name_or_path = model_path if model_path else 'ekwek/Soprano-1.1-80M'
+        
+        self.pipeline = pipeline(model_name_or_path,
             log_level='ERROR',
-            backend_config=backend_config)
+            backend_config=backend_config,
+            **pipeline_kwargs)
 
-        # For ROCm, we need to hook into the model to capture hidden states
-        if is_rocm:
+        # Register hooks for ROCm
+        if self.is_rocm:
             self._setup_hidden_state_capture()
 
     def _setup_hidden_state_capture(self):
-        """Setup hooks to capture hidden states from the model on ROCm"""
-        # Access the underlying model from the pipeline
+        """Attaches hooks to capture hidden states on AMD cards"""
         try:
-            # Get the model from the pytorch engine executor
-            # Path: pipeline.engine.executor.model_agent.patched_model.model.model.norm
+            # Access internal model structure
+            # Path depends on lmdeploy version/backend structure
+            # For PytorchEngine: engine.executor.model_agent.patched_model.model
             model = self.pipeline.engine.executor.model_agent.patched_model.model
 
-            # Hook into model.norm to capture hidden states before lm_head
             def hook_fn(module, input, output):
-                # Store the hidden states (output from final norm layer)
-                # The norm layer may return a tuple (hidden_states, residual)
-                # Extract the actual hidden states tensor
                 if isinstance(output, tuple):
                     hidden_states = output[0]
                 else:
                     hidden_states = output
 
-                # During autoregressive generation, we get one call per generated token
-                # We only want the last token's hidden state from each forward pass
-                # Keep on GPU - no need to transfer to CPU since we use it immediately on GPU
+                # Store detached tensor
+                # We normalize to float32 immediately to ensure decoder compatibility and avoid noise
                 if hidden_states.dim() == 3:
-                    # (batch, seq_len, hidden_dim) - take last position
-                    # Detach to avoid gradient tracking, keep on GPU
-                    self.captured_hidden_states.append(hidden_states[:, -1:, :].detach())
+                    self.captured_hidden_states.append(hidden_states[:, -1:, :].detach().float())
                 else:
-                    self.captured_hidden_states.append(hidden_states.detach())
+                    self.captured_hidden_states.append(hidden_states.detach().float())
 
-            # Register hook on the final normalization layer
             if hasattr(model, 'model') and hasattr(model.model, 'norm'):
                 model.model.norm.register_forward_hook(hook_fn)
-                print("✓ Hidden state capture hook registered on model.norm")
+                print("✓ ROCm Hook Registered successfully (bfloat16 capable)")
             else:
-                print("Warning: Could not find model.norm layer for hidden state capture")
+                print("Warning: Could not find model.norm for ROCm hook")
         except Exception as e:
-            print(f"Warning: Could not setup hidden state capture: {e}")
+            print(f"Warning: Failed to setup ROCm hooks: {e}")
 
     def infer(self,
             prompts,
             top_p=0.95,
             temperature=0.3,
             repetition_penalty=1.2):
-        # Clear previously captured hidden states
+        
+        # Reset buffer for ROCm
         if self.is_rocm:
             self.captured_hidden_states = []
 
@@ -95,51 +108,36 @@ class LMDeployModel(BaseModel):
             max_new_tokens=512)
         responses = self.pipeline(prompts, gen_config=gen_config)
         res = []
-
         for i, response in enumerate(responses):
-            # On ROCm, use captured hidden states instead of response.last_hidden_state
+            # ROCm logic: reconstruct from hooks
             if self.is_rocm and len(self.captured_hidden_states) > 0:
-                # During generation, the hook is called once per forward pass
-                # For batch generation, we need to extract hidden states for this specific prompt
-                # Concatenate all captured states and extract for this batch item
                 try:
-                    # Debug: print capture info
-                    # print(f"DEBUG: Captured {len(self.captured_hidden_states)} forward passes")
-                    # if len(self.captured_hidden_states) > 0:
-                    #     print(f"DEBUG: First capture shape: {self.captured_hidden_states[0].shape}")
-
-                    # Stack all captures: each is (batch, 1, hidden_dim)
-                    # All tensors are already on GPU, no need to move
-                    stacked = torch.cat(self.captured_hidden_states, dim=1)  # (batch, total_tokens, hidden_dim)
-
-                    # Extract for this batch item
-                    if i < stacked.size(0):
-                        hidden_state = stacked[i]  # (total_tokens, hidden_dim)
-
-                        # Skip prompt tokens, keep only generated
-                        num_input = response.input_token_len
-                        num_generated = response.generate_token_len
-
-                        # Debug
-                        # print(f"DEBUG: Total captured tokens: {hidden_state.size(0)}, Input tokens: {num_input}, Generated: {num_generated}")
-
-                        # The captured states include both prompt processing and generation
-                        # We want only the generation part
-                        if hidden_state.size(0) > num_generated:
-                            # Take last num_generated tokens
-                            hidden_state = hidden_state[-num_generated:, :]
-
-                        # hidden_state already on GPU, no need to move
+                    stacked = torch.cat(self.captured_hidden_states, dim=1)
+                    if i < stacked.size(0): 
+                        # Precise alignment logic
+                        hidden_state = stacked[i]
+                        num_gen = response.generate_token_len
+                        
+                        # We need the hidden state that PRODUCED the token.
+                        # Index 0 (Prefill end) -> Produces Token 0
+                        # ...
+                        # Index N-1 (Gen N-1) -> Produces Token N (EOS)
+                        # Index N (Gen N/EOS) -> Unused/Garbage
+                        
+                        if hidden_state.size(0) >= num_gen:
+                            # Take first num_gen states (0 to N-1)
+                            hidden_state = hidden_state[:num_gen, :]
+                        else:
+                             # Fallback if weirdly short (unlikely)
+                             print(f"Warning: captured states too short {hidden_state.size(0)} < {num_gen}")
                     else:
-                        hidden_state = None
+                        hidden_state = stacked[0][:response.generate_token_len, :] if self.captured_hidden_states else None
                 except Exception as e:
-                    print(f"Warning: Failed to extract hidden states: {e}")
-                    import traceback
-                    traceback.print_exc()
+                    print(f"ROCm Capture Error: {e}")
                     hidden_state = None
             else:
                 hidden_state = response.last_hidden_state
-
+            
             res.append({
                 'finish_reason': response.finish_reason,
                 'hidden_state': hidden_state
@@ -151,11 +149,10 @@ class LMDeployModel(BaseModel):
             top_p=0.95,
             temperature=0.3,
             repetition_penalty=1.2):
-        # Clear previously captured hidden states
+        
         if self.is_rocm:
             self.captured_hidden_states = []
-            token_count = 0
-
+            
         gen_config=GenerationConfig(output_last_hidden_state='generation',
             do_sample=True,
             top_p=top_p,
@@ -163,16 +160,62 @@ class LMDeployModel(BaseModel):
             repetition_penalty=repetition_penalty,
             max_new_tokens=512)
         responses = self.pipeline.stream_infer([prompt], gen_config=gen_config)
-
+        
+        yielded_token_count = 0
+        
         for response in responses:
-            # On ROCm, use captured hidden states (already on GPU)
-            if self.is_rocm and len(self.captured_hidden_states) > token_count:
-                hidden_state = self.captured_hidden_states[token_count]
-                token_count += 1
-            else:
-                hidden_state = response.last_hidden_state
+            if self.is_rocm:
+                all_tokens = response.token_ids
+                num_generated = len(all_tokens)
+                
+                if num_generated > yielded_token_count:
+                    # Calculate offset: verify we have enough captured states
+                    # The hook captures everything, including prompt processing. 
+                    # We align from the END of the capture buffer.
+                    
+                    total_captured = len(self.captured_hidden_states)
+                    
+                    # Ensure we don't index past what we have
+                    # We want the index corresponding to the newly generated token
+                    # If we generated N tokens total, we want the Nth from last captured state?
+                    # No, captured states accrue sequentially.
+                    # Prompt processing might add M items. Generation adds 1 item per step.
+                    # So index M + (num_generated - 1) is current token.
+                    
+                    # A robust way is to assume strict 1:1 mapping for generated tokens at the END of the list.
+                    # The last state captured corresponds to the last token generated.
+                    # The (last - 1) state corresponds to (last - 1) token.
+                    
+                    new_tokens_count = num_generated - yielded_token_count
+                    
+                    for k in range(new_tokens_count):
+                        # We want the token at 'yielded_token_count + k' (0-indexed relative to gen)
+                        # Captured Index 0 corresponds to Gen Token 0.
+                        
+                        idx_in_gen = yielded_token_count + k
+                        # Direct mapping:
+                        idx_in_capture = idx_in_gen
+                        
+                        if 0 <= idx_in_capture < total_captured:
+                            hidden_state = self.captured_hidden_states[idx_in_capture]
+                            
+                            if hidden_state.dim() == 3 and hidden_state.shape[1] == 1:
+                                hidden_state = hidden_state.squeeze(1)
 
-            yield {
-                'finish_reason': response.finish_reason,
-                'hidden_state': hidden_state
-            }
+                            yield {
+                                'finish_reason': None,
+                                'hidden_state': hidden_state
+                            }
+                    
+                    yielded_token_count = num_generated
+
+                if response.finish_reason:
+                     yield {
+                        'finish_reason': response.finish_reason,
+                        'hidden_state': self.captured_hidden_states[-1].squeeze(1) if len(self.captured_hidden_states)>0 else None
+                    }
+            else:
+                yield {
+                    'finish_reason': response.finish_reason,
+                    'hidden_state': response.last_hidden_state
+                }
