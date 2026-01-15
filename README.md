@@ -44,6 +44,19 @@ LMDEPLOY_TARGET_DEVICE=rocm pip install git+https://github.com/InternLM/lmdeploy
 LMDEPLOY_TARGET_DEVICE=rocm uv pip install git+https://github.com/InternLM/lmdeploy.git
 ```
 
+#### ROCm Nightly (AMD GPUs)
+For users who want the latest PyTorch nightly builds with ROCm 7.1 support:
+```bash
+pip install -e .[rocm-nightly]
+# or if you use uv:
+uv pip install -e .[rocm-nightly]
+
+# Install lmdeploy for ROCm (recommended for best performance)
+LMDEPLOY_TARGET_DEVICE=rocm pip install git+https://github.com/InternLM/lmdeploy.git
+# or with uv:
+LMDEPLOY_TARGET_DEVICE=rocm uv pip install git+https://github.com/InternLM/lmdeploy.git
+```
+
 > **Note**:
 > - **ROCm users**: You may need to set the `HSA_OVERRIDE_GFX_VERSION` environment variable to match your GPU architecture, for example:
 >   ```bash

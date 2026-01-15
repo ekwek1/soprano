@@ -37,6 +37,13 @@ rocm = [
   "datasets",
   "prometheus_client"
 ]
+rocm-nightly = [
+  "torch",
+  "torchaudio",
+  "pytorch-triton-rocm",
+  "datasets",
+  "prometheus_client"
+]
 
 [project.urls]
 Homepage = "https://github.com/ekwek1/soprano"
@@ -45,14 +52,17 @@ Issues = "https://github.com/ekwek1/soprano/issues"
 [tool.uv.sources]
 torch = [
   { index = "pytorch-cuda", extra = "cuda" },
-  { index = "pytorch-rocm", extra = "rocm" }
+  { index = "pytorch-rocm", extra = "rocm" },
+  { index = "pytorch-rocm-nightly", extra = "rocm-nightly" }
 ]
 torchaudio = [
   { index = "pytorch-cuda", extra = "cuda" },
-  { index = "pytorch-rocm", extra = "rocm" }
+  { index = "pytorch-rocm", extra = "rocm" },
+  { index = "pytorch-rocm-nightly", extra = "rocm-nightly" }
 ]
 pytorch-triton-rocm = [
-  { index = "pytorch-rocm", extra = "rocm" }
+  { index = "pytorch-rocm", extra = "rocm" },
+  { index = "pytorch-rocm-nightly", extra = "rocm-nightly" }
 ]
 
 [[tool.uv.index]]
@@ -65,10 +75,16 @@ name = "pytorch-rocm"
 url = "https://download.pytorch.org/whl/rocm6.4"
 explicit = true
 
+[[tool.uv.index]]
+name = "pytorch-rocm-nightly"
+url = "https://download.pytorch.org/whl/nightly/rocm7.1"
+explicit = true
+
 [tool.uv]
 conflicts = [
   [
     { extra = "cuda" },
     { extra = "rocm" },
+    { extra = "rocm-nightly" },
   ],
 ]

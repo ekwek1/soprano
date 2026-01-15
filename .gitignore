@@ -7,3 +7,4 @@ run.sh
 .venv
 uv.lock
 build
+.*/
