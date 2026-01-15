@@ -2,7 +2,6 @@
 """
 Soprano TTS Command Line Interface
 """
-
 import argparse
 from soprano import SopranoTTS
 from soprano.utils.streaming import play_stream

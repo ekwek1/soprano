@@ -92,6 +92,10 @@ git clone https://github.com/ekwek1/soprano.git
 cd soprano
 pip install -e .
 ```
+> **Tip:** You can increase cache size and decoder batch size to increase inference speed at the cost of higher memory usage. For example:
+> ```bash
+> soprano-webui --cache-size 1000 --decoder-batch-size 4
+> ```
 
 > ### ⚠️ Warning: Windows CUDA users
 > 
