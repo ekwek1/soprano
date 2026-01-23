@@ -16,7 +16,7 @@ class TransformersModel(BaseModel):
         
         self.model = AutoModelForCausalLM.from_pretrained(
             model_name_or_path,
-            dtype=torch.bfloat16 if device == 'cuda' else torch.float32,
+            torch_dtype=torch.bfloat16 if device == 'cuda' else torch.float32,
             device_map=device
         )
         self.tokenizer = AutoTokenizer.from_pretrained(model_name_or_path)
