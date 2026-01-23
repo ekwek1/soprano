@@ -1,7 +1,7 @@
 import torch
 
 RECOGNIZED_DEVICES = ['auto', 'cuda', 'cpu', 'mps']
-RECOGNIZED_BACKENDS = ['auto', 'lmdeploy', 'transformers']
+RECOGNIZED_BACKENDS = ['auto', 'lmdeploy', 'vllm', 'transformers']
 
 def select_device(device='auto'):
     if device == 'auto':
@@ -21,11 +21,16 @@ def select_backend(backend='auto', device='auto'):
         if device == 'cpu':
             backend = 'transformers'
         else:
+            # Try lmdeploy first (fastest), then vllm, then transformers
             try:
                 import lmdeploy
                 backend = 'lmdeploy'
             except ImportError:
-                backend = 'transformers'
+                try:
+                    import vllm
+                    backend = 'vllm'
+                except ImportError:
+                    backend = 'transformers'
 
     assert backend in RECOGNIZED_BACKENDS, f"unrecognized backend {backend}, backend must be in {RECOGNIZED_BACKENDS}"
     print(f"Using backend {backend}")
