@@ -71,22 +71,25 @@ pip install -e .[lmdeploy]
 Python 3.12 is recommended.
 
 ```bash
-# Vars:
 export HSA_OVERRIDE_GFX_VERSION=11.0.0 # Set the variable value appropriate for your graphics card.
-export PYTORCH_ROCM_ARCH="gfx1100" # Set the variable value appropriate for your graphics card.
-export TORCH_BLAS_PREFER_HIPBLASLT=1
-export VLLM_TARGET_DEVICE="rocm"
 
 git clone https://github.com/ekwek1/soprano.git
 cd soprano
 pip install filelock typing-extensions sympy networkx jinja2 fsspec numpy pillow datasets prometheus_client
-pip install --no-cache-dir --no-index --find-links "https://repo.radeon.com/rocm/manylinux/rocm-rel-7.2/" --no-deps torch torchvision triton
+pip install --no-cache-dir --no-index --find-links "https://repo.radeon.com/rocm/manylinux/rocm-rel-7.2/" --no-deps torch triton
 pip install -e .
 
 # LMDeploy (Experimental)
 LMDEPLOY_TARGET_DEVICE=rocm pip install git+https://github.com/InternLM/lmdeploy.git@0e335e0dcf449cb462ecc1b1fab0cc442485e47e
 
-# vLLM + Transfomers (Recommended for RDNA 3 and newer)
+# vLLM + Transfomers (Best performance, recommended for RDNA 3 and newer)
+# WARNING! After installation, the --backend transformers option may no longer work.
+export PYTORCH_ROCM_ARCH="gfx1100" # Set the variable value appropriate for your graphics card.
+export TORCH_BLAS_PREFER_HIPBLASLT=1
+export VLLM_TARGET_DEVICE="rocm"
+
+pip install --no-cache-dir --no-index --find-links "https://repo.radeon.com/rocm/manylinux/rocm-rel-7.2/" --no-deps torchvision
+
 cp -r /opt/rocm/share/amd_smi ./
 pip install ./amd_smi
 
@@ -95,7 +98,7 @@ cd vllm
 
 git checkout 37c9859fab60bbc346be20a662387479eb0760de
 
-pip install --upgrade numba scipy huggingface-hub setuptools_scm
+pip install --upgrade numba scipy setuptools_scm
 pip install -r requirements/rocm.txt
 
 python setup.py develop
