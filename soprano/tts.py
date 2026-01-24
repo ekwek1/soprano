@@ -14,12 +14,13 @@ import time
 class SopranoTTS:
     """
     Soprano Text-to-Speech model.
-    
+
     Args:
         backend: Backend to use for inference. Options:
             - 'auto' (default): Automatically select best backend. Tries lmdeploy first (fastest),
-                               falls back to transformers. CPU always uses transformers.
-            - 'lmdeploy': Force use of LMDeploy (fastest, CUDA only)
+                               then vllm, falls back to transformers. CPU always uses transformers.
+            - 'lmdeploy': Force use of LMDeploy (optimized for CUDA only)
+            - 'vllm': Force use of vLLM (optimized for AMD ROCm)
             - 'transformers': Force use of HuggingFace Transformers (slower, all devices)
         device: Device to run inference on ('auto', 'cuda', 'cpu', 'mps')
         cache_size_mb: Cache size in MB for lmdeploy backend
@@ -37,6 +38,9 @@ class SopranoTTS:
         if backend == 'lmdeploy':
             from .backends.lmdeploy import LMDeployModel
             self.pipeline = LMDeployModel(device=device, cache_size_mb=cache_size_mb, model_path=model_path)
+        elif backend == 'vllm':
+            from .backends.vllm import VLLMModel
+            self.pipeline = VLLMModel(device=device, model_path=model_path)
         elif backend == 'transformers':
             from .backends.transformers import TransformersModel
             self.pipeline = TransformersModel(device=device, model_path=model_path)

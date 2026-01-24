@@ -17,7 +17,7 @@ def main():
                         choices=['auto', 'cuda', 'cpu', 'mps'],
                         help='Device to use for inference')
     parser.add_argument('--backend', '-b', default='auto',
-                        choices=['auto', 'transformers', 'lmdeploy'],
+                        choices=['auto', 'transformers', 'lmdeploy', 'vllm'],
                         help='Backend to use for inference')
     parser.add_argument('--cache-size', '-c', type=int, default=100,
                         help='Cache size in MB (for lmdeploy backend)')

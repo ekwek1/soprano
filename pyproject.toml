@@ -41,3 +41,6 @@ Issues = "https://github.com/ekwek1/soprano/issues"
 [project.scripts]
 soprano = "soprano.cli:main"
 soprano-webui = "soprano.webui:main"
+
+[tool.setuptools.packages.find]
+include = ["soprano", "soprano.*"]
