@@ -21,14 +21,13 @@ def select_backend(backend='auto', device='auto'):
         if device == 'cpu':
             backend = 'transformers'
         else:
-            # Try lmdeploy first (fastest), then vllm, then transformers
             try:
-                import lmdeploy
-                backend = 'lmdeploy'
+                import vllm
+                backend = 'vllm'
             except ImportError:
                 try:
-                    import vllm
-                    backend = 'vllm'
+                    import lmdeploy
+                    backend = 'lmdeploy'
                 except ImportError:
                     backend = 'transformers'
 

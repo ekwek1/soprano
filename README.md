@@ -68,7 +68,7 @@ pip install -e .[lmdeploy]
 
 ### Install from source (ROCm)
 
-Python 3.12 is recommended.
+Python 3.13 is recommended (vLLM doesn't work on Python versions older than 3.13)
 
 ```bash
 export HSA_OVERRIDE_GFX_VERSION=11.0.0 # Set the variable value appropriate for your graphics card.
