@@ -75,6 +75,7 @@ export HSA_OVERRIDE_GFX_VERSION=11.0.0 # Set the variable value appropriate for 
 
 git clone https://github.com/ekwek1/soprano.git
 cd soprano
+pip install --upgrade pip
 pip install filelock typing-extensions sympy networkx jinja2 fsspec numpy pillow datasets prometheus_client
 pip install --no-cache-dir --no-index --find-links "https://repo.radeon.com/rocm/manylinux/rocm-rel-7.2/" --no-deps torch triton
 pip install -e .
