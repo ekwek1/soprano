@@ -94,6 +94,10 @@ Start WebUI:
 ```bash
 soprano-webui # hosted on http://127.0.0.1:7860 by default
 ```
+> **Tip:** Use `--host` and `--port` to change the bind address, for example:
+> ```bash
+> soprano-webui --host 0.0.0.0 --port 8080
+> ```
 > **Tip:** You can increase cache size and decoder batch size to increase inference speed at the cost of higher memory usage. For example:
 > ```bash
 > soprano-webui --cache-size 1000 --decoder-batch-size 4

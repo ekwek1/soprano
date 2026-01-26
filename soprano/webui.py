@@ -25,6 +25,10 @@ parser.add_argument('--cache-size', '-c', type=int, default=100,
                     help='Cache size in MB (for lmdeploy backend)')
 parser.add_argument('--decoder-batch-size', '-bs', type=int, default=1,
                     help='Batch size when decoding audio')
+parser.add_argument('--host', default='127.0.0.1',
+                    help='Host/IP to bind the WebUI server (default: 127.0.0.1)')
+parser.add_argument('--port', type=int, default=None,
+                    help='Port to bind the WebUI server (default: auto-select)')
 args = parser.parse_args()
 
 # Initialize model
@@ -219,10 +223,10 @@ def find_free_port(start_port=7860, max_tries=100):
 
 def main():
     # Start Gradio interface
-    port = find_free_port(7860)
+    port = args.port if args.port is not None else find_free_port(7860)
     print(f"Starting Gradio interface on port {port}")
     demo.launch(
-        server_name="127.0.0.1",
+        server_name=args.host,
         server_port=port,
         share=False,
         theme=gr.themes.Soft(primary_hue="green"),
