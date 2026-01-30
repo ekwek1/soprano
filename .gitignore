@@ -13,3 +13,4 @@ uv.lock
 run.sh
 vllm
 amd_smi
+uv.toml

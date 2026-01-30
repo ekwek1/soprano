@@ -85,6 +85,8 @@ LMDEPLOY_TARGET_DEVICE=rocm pip install git+https://github.com/InternLM/lmdeploy
 
 # vLLM + Transfomers (Best performance, recommended for RDNA 3 and newer)
 # WARNING! After installation, the --backend transformers option may no longer work.
+# (Initial run only) You may experience slower audio generation upon first launch. Please restart the application to resolve this.
+
 export PYTORCH_ROCM_ARCH="gfx1100" # Set the variable value appropriate for your graphics card.
 export TORCH_BLAS_PREFER_HIPBLASLT=1
 export VLLM_TARGET_DEVICE="rocm"
