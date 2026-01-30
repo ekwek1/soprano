@@ -24,7 +24,7 @@
 - **<1 GB** memory usage with a compact 80M parameter architecture
 - **Infinite generation length** with automatic text splitting
 - Highly expressive, crystal clear audio generation at **32kHz**
-- Widespread support for CUDA, CPU, and MPS devices on Windows, Linux, and Mac
+- Widespread support for CUDA, ROCm, CPU, and MPS devices on Windows, Linux, and Mac
 - Supports OpenAI-compatible endpoint, ONNX, WebUI, CLI, and ComfyUI for easy and production-ready inference
 
 https://github.com/user-attachments/assets/525cf529-e79e-4368-809f-6be620852826
@@ -66,6 +66,48 @@ cd soprano
 pip install -e .[lmdeploy]
 ```
 
+### Install from source (ROCm)
+
+Python 3.13 is recommended (vLLM doesn't work on Python versions older than 3.13)
+
+```bash
+export HSA_OVERRIDE_GFX_VERSION=11.0.0 # Set the variable value appropriate for your graphics card.
+
+git clone https://github.com/ekwek1/soprano.git
+cd soprano
+pip install --upgrade pip
+pip install filelock typing-extensions sympy networkx jinja2 fsspec numpy pillow datasets prometheus_client
+pip install --no-cache-dir --no-index --find-links "https://repo.radeon.com/rocm/manylinux/rocm-rel-7.2/" --no-deps torch triton
+pip install -e .
+
+# LMDeploy (Experimental)
+LMDEPLOY_TARGET_DEVICE=rocm pip install git+https://github.com/InternLM/lmdeploy.git@0e335e0dcf449cb462ecc1b1fab0cc442485e47e
+
+# vLLM + Transfomers (Best performance, recommended for RDNA 3 and newer)
+# WARNING! After installation, the --backend transformers option may no longer work.
+# (Initial run only) You may experience slower audio generation upon first launch. Please restart the application to resolve this.
+
+export PYTORCH_ROCM_ARCH="gfx1100" # Set the variable value appropriate for your graphics card.
+export TORCH_BLAS_PREFER_HIPBLASLT=1
+export VLLM_TARGET_DEVICE="rocm"
+
+pip install --no-cache-dir --no-index --find-links "https://repo.radeon.com/rocm/manylinux/rocm-rel-7.2/" --no-deps torchvision
+
+cp -r /opt/rocm/share/amd_smi ./
+pip install ./amd_smi
+
+git clone https://github.com/vllm-project/vllm
+cd vllm
+
+git checkout 37c9859fab60bbc346be20a662387479eb0760de
+
+pip install --upgrade numba scipy setuptools_scm
+pip install -r requirements/rocm.txt
+
+python setup.py develop
+cd ..
+```
+
 ### Install from source (CPU/MPS)
 
 ```bash
@@ -73,6 +115,10 @@ git clone https://github.com/ekwek1/soprano.git
 cd soprano
 pip install -e .
 ```
+> **Tip:** You can increase cache size and decoder batch size to increase inference speed at the cost of higher memory usage. For example:
+> ```bash
+> soprano-webui --cache-size 1000 --decoder-batch-size 4
+> ```
 
 > ### ⚠️ Warning: Windows CUDA users
 > 

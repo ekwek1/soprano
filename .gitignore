@@ -9,3 +9,8 @@ BACKEND-SELECTION.md
 Taskfile.yml
 benchmark.py
 examples-backend.py
+uv.lock
+run.sh
+vllm
+amd_smi
+uv.toml
