@@ -2,6 +2,7 @@ from .vocos.decoder import SopranoDecoder
 from .utils.text_normalizer import clean_text
 from .utils.text_splitter import split_and_recombine_text
 from .utils.auto_select import select_device, select_backend
+from ._constants import MODEL_ID
 import torch
 import re
 from unidecode import unidecode
@@ -47,7 +48,7 @@ class SopranoTTS:
         if model_path:
             decoder_path = os.path.join(model_path, 'decoder.pth')
         else:
-            decoder_path = hf_hub_download(repo_id='ekwek/Soprano-1.1-80M', filename='decoder.pth')
+            decoder_path = hf_hub_download(repo_id=MODEL_ID, filename='decoder.pth')
         self.decoder.load_state_dict(torch.load(decoder_path, map_location=device))
         self.decoder_batch_size=decoder_batch_size
         self.RECEPTIVE_FIELD = 4 # Decoder receptive field

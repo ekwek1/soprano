@@ -9,3 +9,9 @@ BACKEND-SELECTION.md
 Taskfile.yml
 benchmark.py
 examples-backend.py
+onnx_models/
+uv.lock
+.idea
+.DS_Store
+CLAUDE.md
+test_output/

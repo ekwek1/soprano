@@ -2,6 +2,7 @@ import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer
 from transformers import LogitsProcessorList, RepetitionPenaltyLogitsProcessor, TemperatureLogitsWarper, TopPLogitsWarper
 from .base import BaseModel
+from soprano._constants import MODEL_ID
 
 
 class TransformersModel(BaseModel):
@@ -12,7 +13,7 @@ class TransformersModel(BaseModel):
         self.device = device
         
         # Use local model if path provided, otherwise use HuggingFace
-        model_name_or_path = model_path if model_path else 'ekwek/Soprano-1.1-80M'
+        model_name_or_path = model_path if model_path else MODEL_ID
         
         self.model = AutoModelForCausalLM.from_pretrained(
             model_name_or_path,
