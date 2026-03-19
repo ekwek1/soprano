@@ -27,12 +27,13 @@ dependencies = [
   "transformers>=4.51.0",
   "unidecode",
   "uvicorn",
-  "inflect"
+  "inflect",
 ]
 license = {file = "LICENSE"}
 
 [project.optional-dependencies]
 lmdeploy = ["lmdeploy"]
+onnx = ["onnxruntime>=1.24.3", "onnx>=1.20.1", "onnxscript>=0.6.2"]
 
 [project.urls]
 Homepage = "https://github.com/ekwek1/soprano"
@@ -41,3 +42,6 @@ Issues = "https://github.com/ekwek1/soprano/issues"
 [project.scripts]
 soprano = "soprano.cli:main"
 soprano-webui = "soprano.webui:main"
+
+[tool.setuptools.packages.find]
+include = ["soprano*"]
